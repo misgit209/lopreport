@@ -1,0 +1,131 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>visitor Login</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="/static/css/flash.css">
+    <link rel="stylesheet" href="/static/css/visitor/login.css">
+
+</head>
+
+<body>
+    <div class="floating-shapes">
+        <div class="shape" style="width: 300px; height: 300px; left: 5%; top: 5%;"></div>
+        <div class="shape" style="width: 150px; height: 150px; left: 70%; top: 15%;"></div>
+        <div class="shape" style="width: 200px; height: 200px; left: 30%; top: 50%;"></div>
+        <div class="shape" style="width: 100px; height: 100px; left: 80%; top: 70%;"></div>
+    </div>
+
+    <!-- Flash messages -->
+    {% with messages = get_flashed_messages(with_categories=true) %}
+    {% if messages %}
+    {% for category, message in messages %}
+    <div class="flash-messages {{ category }}">{{ message }}</div>
+    {% endfor %}
+    {% endif %}
+    {% endwith %}
+
+    <div class="login-container">
+        <div class="login-header">
+            <div class="login-icon">
+                <i class="fas fa-book-open"></i>
+            </div>
+            <h2>Welcome Back</h2>
+            <p>Sign in to access your visitor</p>
+        </div>
+
+        <form method="post" action="/visitor/login">
+            <div class="form-group">
+                <label for="userid">User ID</label>
+                <i class="fas fa-user"></i>
+                <input type="text" id="userid" name="userid" required autocomplete="username"
+                    placeholder="Enter your user ID">
+            </div>
+            <div class="form-group">
+                <label for="password">Password</label>
+                <i class="fas fa-lock"></i>
+                <input type="password" id="password" name="password" required autocomplete="current-password"
+                    placeholder="Enter your password">
+            </div>
+            <button type="submit" class="btn-login">
+                <span>L o g i n</span>
+            </button>
+        </form>
+
+        <div class="login-footer">
+            &copy; 2025 Salzer Electronics Limited 
+        </div>
+    </div>
+
+    <script>
+        // Add subtle interactive animations
+        document.querySelectorAll('.form-group input').forEach(input => {
+            input.addEventListener('focus', function () {
+                this.parentNode.querySelector('label').style.transform = 'translateY(-5px)';
+                this.parentNode.querySelector('label').style.fontSize = '0.8rem';
+            });
+
+            input.addEventListener('blur', function () {
+                if (!this.value) {
+                    this.parentNode.querySelector('label').style.transform = '';
+                    this.parentNode.querySelector('label').style.fontSize = '';
+                }
+            });
+        });
+
+        // Button ripple effect
+        document.querySelector('.btn-login').addEventListener('click', function (e) {
+            const btn = e.currentTarget;
+            const circle = document.createElement('span');
+            const rect = btn.getBoundingClientRect();
+
+            const diameter = Math.max(btn.clientWidth, btn.clientHeight);
+            const radius = diameter / 2;
+
+            circle.style.width = circle.style.height = `${diameter}px`;
+            circle.style.left = `${e.clientX - rect.left - radius}px`;
+            circle.style.top = `${e.clientY - rect.top - radius}px`;
+            circle.classList.add('ripple');
+
+            const ripple = btn.getElementsByClassName('ripple')[0];
+            if (ripple) ripple.remove();
+
+            btn.appendChild(circle);
+        });
+        function addNewCustomer() {
+            const name = document.getElementById('customerName').value;
+            // Add company input if needed
+            // const company = document.getElementById('companyName').value;
+
+            if (!name) {
+                alert('Customer name is required');
+                return;
+            }
+
+            fetch('/visitor/add_customer', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    customerName: name,
+                    pdfPath: '' // Set this if you handle PDF upload
+                })
+            })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        alert(`New customer "${name}" added!\nLink: ${data.link}`);
+                        // Optionally show QR code image
+                        // You can display the QR code using <img src="data.qrCodePath">
+                        closeModal('newCustomerModal');
+                    } else {
+                        alert('Error: ' + data.error);
+                    }
+                });
+        }
+    </script>
+</body>
+
+</html>
