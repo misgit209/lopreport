@@ -44,7 +44,7 @@ document.getElementById('recordsTab').addEventListener('click', function (e) {
 });
 
 document.getElementById('reportsTab').addEventListener('click', function (e) {
-    e.preventDefault();
+    e.preventDefault(); 
     document.getElementById('visitorSection').classList.add('d-none');
     document.getElementById('recordsSection').classList.add('d-none');
     document.getElementById('reportsContentSection').classList.remove('d-none');
@@ -56,6 +56,9 @@ document.getElementById('reportsTab').addEventListener('click', function (e) {
     const today = new Date();
     const lastWeek = new Date();
     lastWeek.setDate(today.getDate() - 7);
+
+    // Format dates as YYYY-MM-DD
+    const formatDate = (date) => date.toISOString().split('T')[0];
 
     document.getElementById('reportFromDate').value = '';
     document.getElementById('reportToDate').value = '';
@@ -407,7 +410,7 @@ function renderNoRecords() {
     const tbody = document.getElementById('visitorsTableBody');
     tbody.innerHTML = `
                 <tr>
-                    <td colspan="9" class="text-center py-4 text-muted">
+                    <td colspan="11" class="text-center py-4 text-muted">
                         <i class="fas fa-user-slash fa-2x mb-2"></i>
                         <p>No visitor records found</p>
                     </td>
@@ -419,7 +422,7 @@ function renderErrorState(errorMessage) {
     const tbody = document.getElementById('visitorsTableBody');
     tbody.innerHTML = `
                 <tr>
-                    <td colspan="9" class="text-center py-4 text-danger">
+                    <td colspan="11" class="text-center py-4 text-danger">
                         <i class="fas fa-exclamation-triangle fa-2x mb-2"></i>
                         <p>Failed to load records</p>
                         <small>${errorMessage}</small>
@@ -454,6 +457,8 @@ function renderVisitorRecords(visitors) {
         row.innerHTML = `
                     <td>${visitor.Name || '-'}</td>
                     <td>${visitor.Phone || '-'}</td>
+                    <td>${visitor.TypeOfVisitor || '-'}</td>
+                    <td>${visitor.NoOfPersons || '-'}</td>
                     <td>${visitor.PersonToMeet || '-'}</td>
                     <td>${visitor.Purpose || '-'}</td>
                     <td>${formatTime(visitor.InTime) || '-'}</td>
@@ -575,7 +580,7 @@ function formatTime(dateTimeStr) {
 }
 
 // Logout button
-document.querySelector('.btn-logout').addEventListener('click', function () {
+document.querySelector('.logout').addEventListener('click', function () {
     if (confirm('Are you sure you want to logout?')) {
         window.location.href = '/visitor/logout';
     }
@@ -586,36 +591,55 @@ document.getElementById('exportBtn').addEventListener('click', function () {
     showAlert('Exporting visitor records...', 'info');
 });
 
-// Add search functionality
-document.getElementById('searchBtn').addEventListener('click', searchVisitors);
-document.getElementById('searchInput').addEventListener('keyup', function (e) {
-    if (e.key === 'Enter') {
-        searchVisitors();
-    }
-});
-
+// Search functionality
 function searchVisitors() {
-    const searchTerm = document.getElementById('searchInput').value.toLowerCase();
+    const searchTerm = document.getElementById('searchInput').value.toLowerCase().trim();
+
+    // If search is empty, load all records
     if (!searchTerm) {
         loadVisitorRecords();
         return;
     }
 
     fetch('/visitor/api/get_visitors')
-        .then(response => response.json())
+        .then(response => {
+            if (!response.ok) {
+                throw new Error('Network response was not ok');
+            }
+            return response.json();
+        })
         .then(data => {
             if (data.success) {
-                const filtered = data.visitors.filter(visitor =>
-                    (visitor.Name && visitor.Name.toLowerCase().includes(searchTerm)) ||
-                    (visitor.Phone && visitor.Phone.toLowerCase().includes(searchTerm))
-                );
+                const filtered = data.visitors.filter(visitor => {
+                    const nameMatch = visitor.Name && visitor.Name.toLowerCase().includes(searchTerm);
+                    const phoneMatch = visitor.Phone && visitor.Phone.toLowerCase().includes(searchTerm);
+                    const personMatch = visitor.PersonToMeet && visitor.PersonToMeet.toLowerCase().includes(searchTerm);
+                    return nameMatch || phoneMatch || personMatch;
+                });
+
+                if (filtered.length === 0) {
+                    showAlert('No matching records found', 'warning');
+                }
                 renderVisitorRecords(filtered);
+            } else {
+                throw new Error(data.message || 'Failed to load data');
             }
         })
         .catch(error => {
+            console.error('Error searching visitors:', error);
             showAlert('Error searching visitors: ' + error.message, 'danger');
         });
 }
+
+// Add search button click handler
+document.getElementById('searchBtn').addEventListener('click', searchVisitors);
+
+// Add search on Enter key
+document.getElementById('searchInput').addEventListener('keypress', function (e) {
+    if (e.key === 'Enter') {
+        searchVisitors();
+    }
+});
 
 // Report generation function
 function generateReport() {
@@ -627,17 +651,48 @@ function generateReport() {
         return;
     }
 
-    fetch(`/visitor/api/get_visitor_reports?from=${fromDate}&to=${toDate}`)
-        .then(response => response.json())
+    // Convert dates to proper format (YYYY-MM-DD)
+    const fromDateObj = new Date(fromDate);
+    const toDateObj = new Date(toDate);
+
+    // Add one day to toDate to include the entire selected day
+    toDateObj.setDate(toDateObj.getDate() + 1);
+
+    const formattedFromDate = fromDateObj.toISOString().split('T')[0];
+    const formattedToDate = toDateObj.toISOString().split('T')[0];
+
+    // Show loading state
+    const generateBtn = document.getElementById('generateReportBtn');
+    const originalText = generateBtn.innerHTML;
+    generateBtn.innerHTML = '<i class="fas fa-spinner fa-spin me-1"></i>Generating';
+    generateBtn.disabled = true;
+
+    fetch(`/visitor/api/get_visitor_reports?from=${formattedFromDate}&to=${formattedToDate}`)
+        .then(response => {
+            if (!response.ok) {
+                throw new Error('Network response was not ok');
+            }
+            return response.json();
+        })
         .then(data => {
             if (data.success) {
+                if (data.visitors.length === 0) {
+                    showAlert('No records found for selected date range', 'warning');
+                } else {
+                    showAlert(`Report generated with ${data.visitors.length} records`, 'success');
+                }
                 renderReport(data.visitors);
             } else {
                 throw new Error(data.message || 'Failed to load report');
             }
         })
         .catch(error => {
-            showAlert(error.message, 'danger');
+            console.error('Error generating report:', error);
+            showAlert('Error generating report: ' + error.message, 'danger');
+        })
+        .finally(() => {
+            generateBtn.innerHTML = originalText;
+            generateBtn.disabled = false;
         });
 }
 
@@ -645,6 +700,18 @@ function generateReport() {
 function renderReport(visitors) {
     const tbody = document.getElementById('reportsTableBody');
     tbody.innerHTML = '';
+
+    if (!visitors || visitors.length === 0) {
+        tbody.innerHTML = `
+                    <tr>
+                        <td colspan="10" class="text-center py-4 text-muted">
+                            <i class="fas fa-user-slash fa-2x mb-2"></i>
+                            <p>No visitor records found</p>
+                        </td>
+                    </tr>
+                `;
+        return;
+    }
 
     visitors.forEach(visitor => {
         const row = document.createElement('tr');
@@ -656,7 +723,15 @@ function renderReport(visitors) {
             const outTime = new Date(visitor.OutTime);
             const diffMs = outTime - inTime;
             const diffMins = Math.round(diffMs / 60000);
-            duration = `${diffMins} mins`;
+
+            // Format duration as hours and minutes if more than 60 minutes
+            if (diffMins >= 60) {
+                const hours = Math.floor(diffMins / 60);
+                const minutes = diffMins % 60;
+                duration = `${hours}h ${minutes}m`;
+            } else {
+                duration = `${diffMins}m`;
+            }
         }
 
         // Photo cell
@@ -672,6 +747,8 @@ function renderReport(visitors) {
         row.innerHTML = `
                     <td>${visitor.Name || '-'}</td>
                     <td>${visitor.Phone || '-'}</td>
+                    <td>${visitor.TypeOfVisitor || '-'}</td>
+                    <td>${visitor.NoOfPersons || '-'}</td>
                     <td>${visitor.PersonToMeet || '-'}</td>
                     <td>${visitor.Purpose || '-'}</td>
                     <td>${formatTime(visitor.InTime) || '-'}</td>
@@ -684,5 +761,209 @@ function renderReport(visitors) {
     });
 }
 
-// Add event listener for report generation
+// Add event listeners for date changes
+document.getElementById('reportFromDate').addEventListener('change', generateReport);
+document.getElementById('reportToDate').addEventListener('change', generateReport);
+
+// Add event listener for report generation button
 document.getElementById('generateReportBtn').addEventListener('click', generateReport);
+
+// Initialize autocomplete for personToMeet field
+$(document).ready(function () {
+    $("#personToMeet").autocomplete({
+        source: function (request, response) {
+            $.ajax({
+                url: "/visitor/api/get_usernames",
+                dataType: "json",
+                data: {
+                    term: request.term
+                },
+                success: function (data) {
+                    response(data);
+                },
+                error: function (xhr, status, error) {
+                    console.error("Error fetching usernames:", error);
+                    response([]);
+                }
+            });
+        },
+        minLength: 2, // Minimum characters before triggering search
+        select: function (event, ui) {
+            // Optional: Do something when a name is selected
+            console.log("Selected user: " + ui.item.value);
+        }
+    });
+});
+
+document.addEventListener('DOMContentLoaded', function () {
+    const personToMeetInput = document.getElementById('personToMeet');
+    let timeoutId;
+
+    personToMeetInput.addEventListener('input', function (e) {
+        clearTimeout(timeoutId);
+        const searchTerm = e.target.value.trim();
+
+        if (searchTerm.length >= 2) {
+            timeoutId = setTimeout(() => {
+                fetch(`/visitor/api/get_usernames?term=${encodeURIComponent(searchTerm)}`)
+                    .then(response => response.json())
+                    .then(data => {
+                        // Create and show dropdown with suggestions
+                        showSuggestions(data);
+                    });
+            }, 300); // Debounce for 300ms
+        }
+    });
+
+    function showSuggestions(suggestions) {
+        // Implement your own dropdown display logic here
+        // This is a simplified version
+        const datalist = document.createElement('datalist');
+        datalist.id = 'usernameSuggestions';
+
+        suggestions.forEach(username => {
+            const option = document.createElement('option');
+            option.value = username;
+            datalist.appendChild(option);
+        });
+
+        // Remove existing datalist if any
+        const existing = document.getElementById('usernameSuggestions');
+        if (existing) {
+            existing.remove();
+        }
+
+        document.body.appendChild(datalist);
+        personToMeetInput.setAttribute('list', 'usernameSuggestions');
+    }
+});
+
+document.getElementById('phone').addEventListener('blur', function () {
+    const phone = this.value.trim();
+    if (phone.length > 0) {
+        fetch(`/visitor/api/get_visitor_by_phone?phone=${encodeURIComponent(phone)}`)
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    document.getElementById('name').value = data.name || '';
+                    document.getElementById('address').value = data.address || '';
+                    document.getElementById('personToMeet').value = data.personToMeet || '';
+                    document.getElementById('purpose').value = data.purpose || '';
+                    document.getElementById('visitorType').value = data.visitorType || '';
+                    document.getElementById('numberOfPersons').value = data.numberOfPersons || '1';
+                }
+            });
+    }
+});
+
+// OTP Verification Logic
+document.addEventListener('DOMContentLoaded', function () {
+    const verifyOtpBtn = document.getElementById('verifyOtpBtn');
+    const otpStatus = document.getElementById('otpStatus');
+    const phoneInput = document.getElementById('phone');
+    const otpInput = document.getElementById('otp');
+
+    // Send OTP when phone number is entered
+    phoneInput.addEventListener('blur', function () {
+        const phone = this.value.trim();
+        if (phone.length > 0) {
+            sendOtp(phone);
+        }
+    });
+
+    // Verify OTP when button is clicked
+    verifyOtpBtn.addEventListener('click', function () {
+        const phone = phoneInput.value.trim();
+        const otp = otpInput.value.trim();
+
+        if (!phone) {
+            otpStatus.textContent = 'Please enter phone number first';
+            otpStatus.className = 'mt-1 small text-danger';
+            return;
+        }
+
+        if (!otp) {
+            otpStatus.textContent = 'Please enter OTP';
+            otpStatus.className = 'mt-1 small text-danger';
+            return;
+        }
+
+        verifyOtp(phone, otp);
+    });
+
+    // Function to send OTP
+    function sendOtp(phone) {
+        otpStatus.textContent = 'Sending OTP...';
+        otpStatus.className = 'mt-1 small text-info';
+
+        fetch('/visitor/api/send_otp', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+                phone: phone
+            })
+        })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    otpStatus.textContent = 'OTP sent successfully!';
+                    otpStatus.className = 'mt-1 small text-success';
+                } else {
+                    throw new Error(data.message || 'Failed to send OTP');
+                }
+            })
+            .catch(error => {
+                otpStatus.textContent = error.message;
+                otpStatus.className = 'mt-1 small text-danger';
+                console.error('Error sending OTP:', error);
+            });
+    }
+
+    // Function to verify OTP
+    function verifyOtp(phone, otp) {
+        otpStatus.textContent = 'Verifying OTP...';
+        otpStatus.className = 'mt-1 small text-info';
+        verifyOtpBtn.disabled = true;
+        verifyOtpBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i>';
+
+        fetch('/visitor/api/verify_otp', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+                phone: phone,
+                otp: otp
+            })
+        })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    otpStatus.textContent = 'OTP verified successfully!';
+                    otpStatus.className = 'mt-1 small text-success';
+                    verifyOtpBtn.classList.remove('btn-primary');
+                    verifyOtpBtn.classList.add('btn-success');
+                    verifyOtpBtn.innerHTML = '<i class="fas fa-check-circle"></i>';
+                    verifyOtpBtn.disabled = true;
+                } else {
+                    throw new Error(data.message || 'Invalid OTP');
+                }
+            })
+            .catch(error => {
+                otpStatus.textContent = error.message;
+                otpStatus.className = 'mt-1 small text-danger';
+                verifyOtpBtn.classList.remove('btn-primary', 'btn-success');
+                verifyOtpBtn.classList.add('btn-danger');
+                verifyOtpBtn.innerHTML = '<i class="fas fa-times"></i>';
+                setTimeout(() => {
+                    verifyOtpBtn.classList.remove('btn-danger');
+                    verifyOtpBtn.classList.add('btn-primary');
+                    verifyOtpBtn.innerHTML = '<i class="fas fa-check"></i>';
+                    verifyOtpBtn.disabled = false;
+                }, 2000);
+                console.error('Error verifying OTP:', error);
+            });
+    }
+});

@@ -1,5 +1,5 @@
 import time
-from datetime import datetime
+from datetime import datetime, timedelta
 import socket
 import base64
 import ssl
@@ -14,6 +14,7 @@ import cv2
 import numpy as np
 import smtplib
 from email.message import EmailMessage
+from twilio.rest import Client 
 
 # Configure logging
 logging.basicConfig(level=logging.INFO)
@@ -67,7 +68,7 @@ def visitor_login():
                         return redirect(url_for('visitor.visitor_login'))
 
                     session['user_id'] = user_id
-                    return redirect(url_for('visitor.home'))
+                    return redirect(url_for('visitor.dashboard'))
 
         except Exception as e:
             logger.error(f"Error during login: {str(e)}", exc_info=True)
@@ -76,11 +77,75 @@ def visitor_login():
 
     return render_template('visitor/login.html')
 
-@visitor_bp.route('/')
-def home():
+@visitor_bp.route('/dashboard')
+def dashboard():
     if 'user_id' not in session:
         return redirect(url_for('visitor.visitor_login'))
-    return render_template('visitor/home.html', username=session['user_id'])
+
+    try:
+        with closing(get_connection()) as conn:
+            with conn.cursor() as cursor:
+                # Total visitors
+                cursor.execute("SELECT COUNT(*) FROM VisitorManagement")
+                total_visitors = cursor.fetchone()[0]
+
+                # Last month visitors
+                last_month = datetime.now() - timedelta(days=30)
+                cursor.execute("SELECT COUNT(*) FROM VisitorManagement WHERE CreatedOn >= ?", last_month)
+                last_month_count = cursor.fetchone()[0]
+                visitor_growth = round(((total_visitors - last_month_count) / last_month_count) * 100, 1) if last_month_count > 0 else 0
+
+                # Today visitors
+                today = datetime.now().date()
+                cursor.execute("SELECT COUNT(*) FROM VisitorManagement WHERE CAST(CreatedOn AS DATE) = ?", today)
+                today_visitors = cursor.fetchone()[0]
+
+                # Yesterday visitors
+                yesterday = today - timedelta(days=1)
+                cursor.execute("SELECT COUNT(*) FROM VisitorManagement WHERE CAST(CreatedOn AS DATE) = ?", yesterday)
+                yesterday_count = cursor.fetchone()[0]
+                daily_growth = round(((today_visitors - yesterday_count) / yesterday_count) * 100, 1) if yesterday_count > 0 else 0
+
+                # Upcoming appointments
+                cursor.execute("SELECT COUNT(*) FROM VisitorRequestManagement WHERE EventDate >= ?", today)
+                upcoming_appointments = cursor.fetchone()[0]
+
+                # Last week's appointments
+                last_week = today - timedelta(days=7)
+                cursor.execute("""
+                    SELECT COUNT(*) FROM VisitorRequestManagement
+                    WHERE EventDate BETWEEN ? AND ?
+                """, (last_week, today - timedelta(days=1)))
+                last_week_count = cursor.fetchone()[0]
+                appointment_change = round(((upcoming_appointments - last_week_count) / last_week_count) * 100, 1) if last_week_count > 0 else 0
+
+        return render_template(
+            'visitor/dashboard.html',
+            username=session['user_id'],
+            total_visitors=total_visitors,
+            visitor_growth=visitor_growth,
+            today_visitors=today_visitors,
+            daily_growth=daily_growth,
+            upcoming_appointments=upcoming_appointments,
+            appointment_change=appointment_change
+        )
+
+    except Exception as e:
+        logger.error(f"Error loading dashboard: {e}", exc_info=True)
+        flash("Failed to load dashboard data.", "danger")
+        return render_template('visitor/dashboard.html')
+
+@visitor_bp.route('/visitor')
+def visitor_page():
+    if 'user_id' not in session:
+        return redirect(url_for('visitor.visitor_login'))
+    return render_template('visitor/visitor.html', username=session['user_id'])
+
+@visitor_bp.route('/report')
+def report_page():
+    if 'user_id' not in session:
+        return redirect(url_for('visitor.visitor_login'))
+    return render_template('visitor/report.html', username=session['user_id'])
 
 @visitor_bp.route('/api/save_visitor', methods=['POST'])
 def save_visitor():
@@ -91,6 +156,8 @@ def save_visitor():
         # Get form data
         phone = request.form.get('phone', '').strip()
         name = request.form.get('name', '').strip()
+        type_of_visitor = request.form.get('visitorType', '').strip()
+        no_of_persons = request.form.get('numberOfPersons', '1').strip()
         id_card_no = request.form.get('idCardNo', '').strip()
         address = request.form.get('address', '').strip()
         tab_serial = request.form.get('tabSerial', '').strip()
@@ -149,12 +216,12 @@ def save_visitor():
                 with conn.cursor() as cursor:
                     cursor.execute("""
                         INSERT INTO VisitorManagement (
-                            Phone, Name, IDCardNo, Address, TabSerial, LaptopSerial, 
+                            Phone, Name, TypeOfVisitor, NoOfPersons, IDCardNo, Address, TabSerial, LaptopSerial, 
                             Pendrive, PersonToMeet, Purpose, InTime, OutTime, 
                             Remarks, Photo
-                        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
                     """, (
-                        phone, name, id_card_no, address, tab_serial, laptop_serial,
+                        phone, name, type_of_visitor,no_of_persons, id_card_no, address, tab_serial, laptop_serial,
                         pendrive, person_to_meet, purpose, in_time_dt, out_time_dt,
                         remarks, photo
                     ))
@@ -269,17 +336,20 @@ def get_visitors():
         return jsonify({"success": False, "message": "Unauthorized"}), 401
 
     try:
+        # Get optional date range parameters
         from_date = request.args.get('from')
         to_date = request.args.get('to')
-        search_term = request.args.get('search', '').lower()
         
         with closing(get_connection()) as conn:
             with conn.cursor() as cursor:
-                cursor.execute("""
+                # Base query
+                query = """
                     SELECT 
                         VisitorID, 
                         ISNULL(Phone, '') as Phone,
                         ISNULL(Name, '') as Name,
+                        ISNULL(TypeOfVisitor, '') as TypeOfVisitor,
+                        ISNULL(NoOfPersons, 1) as NoOfPersons,
                         ISNULL(Address, '') as Address,
                         ISNULL(IdCardNo, '') as IdCardNo,
                         ISNULL(TabSerial, '') as TabSerial,
@@ -290,14 +360,24 @@ def get_visitors():
                         CONVERT(varchar, InTime, 120) as InTime,
                         CONVERT(varchar, OutTime, 120) as OutTime,
                         Photo,
-                        ISNULL(Remarks, '') as Remarks
+                        ISNULL(Remarks, '') as Remarks,
+                        CONVERT(varchar, CreatedOn, 120) as CreatedOn
                     FROM VisitorManagement
                     WHERE 1=1
-                """ + 
-                (" AND CONVERT(date, InTime) >= ?" if from_date else "") + 
-                (" AND CONVERT(date, InTime) <= ?" if to_date else "") + 
-                " ORDER BY InTime DESC",
-                ([from_date] if from_date else []) + ([to_date] if to_date else []))
+                """
+                
+                # Add date filters if provided
+                params = []
+                if from_date:
+                    query += " AND CONVERT(date, CreatedOn) >= ?"
+                    params.append(from_date)
+                if to_date:
+                    query += " AND CONVERT(date, CreatedOn) <= ?"
+                    params.append(to_date)
+                
+                query += " ORDER BY CreatedOn DESC"
+                
+                cursor.execute(query, params)
                 
                 visitors = []
                 for row in cursor.fetchall():
@@ -305,26 +385,26 @@ def get_visitors():
                         "VisitorID": row[0],
                         "Phone": row[1],
                         "Name": row[2],
-                        "Address": row[3],
-                        "IdCardNo": row[4],
-                        "TabSerial": row[5],
-                        "LaptopSerial": row[6],
-                        "Pendrive": row[7],
-                        "PersonToMeet": row[8],
-                        "Purpose": row[9],
-                        "InTime": row[10],
-                        "OutTime": row[11],
-                        "Remarks": row[13]
+                        "TypeOfVisitor": row[3],
+                        "NoOfPersons": row[4],
+                        "Address": row[5],
+                        "IdCardNo": row[6],
+                        "TabSerial": row[7],
+                        "LaptopSerial": row[8],
+                        "Pendrive": row[9],
+                        "PersonToMeet": row[10],
+                        "Purpose": row[11],
+                        "InTime": row[12],
+                        "OutTime": row[13],
+                        "Remarks": row[15],
+                        "CreatedOn": row[16]
                     }
                     
-                    if row[12]:
-                        visitor["PhotoBase64"] = base64.b64encode(row[12]).decode('utf-8')
+                    # Handle photo data if needed
+                    if row[14]:  # Photo is at index 14
+                        visitor["PhotoBase64"] = base64.b64encode(row[14]).decode('utf-8')
                     
-                    if not search_term or (
-                        search_term in visitor["Name"].lower() or 
-                        search_term in visitor["Phone"].lower()
-                    ):
-                        visitors.append(visitor)
+                    visitors.append(visitor)
 
                 return jsonify({
                     "success": True,
@@ -501,6 +581,163 @@ def get_visitor_by_phone():
                 })
             else:
                 return jsonify({"success": False, "message": "No visitor found"}), 404
+            
+@visitor_bp.route('/api/send_otp', methods=['POST'])
+def send_otp():
+    try:
+        phone_number = request.json.get('phone')
+        if not phone_number:
+            return jsonify({"success": False, "message": "Phone number is required"}), 400
+
+        # Initialize Twilio client (move these to config)
+        account_sid = 'ACbcb45be0e21a9b19a5a0eee62a5a14e9'  # Your Twilio Account SID
+        auth_token = 'e057d3fe136b92d8c119678e5d7cf9d5'  # Your Twilio Auth Token
+        verify_sid = 'VAfd2b570cf9e0fc7f86256c681a6af593'  # Your Verify Service SID
+        
+        client = Client(account_sid, auth_token)
+
+        # Send OTP
+        verification = client.verify.v2.services(verify_sid) \
+            .verifications \
+            .create(to=phone_number, channel='sms')
+
+        return jsonify({
+            "success": True,
+            "message": "OTP sent successfully",
+            "verification_sid": verification.sid
+        })
+
+    except Exception as e:
+        logger.error(f"Error sending OTP: {str(e)}", exc_info=True)
+        return jsonify({
+            "success": False,
+            "message": "Failed to send OTP"
+        }), 500
+
+@visitor_bp.route('/api/verify_otp', methods=['POST'])
+def verify_otp():
+    try:
+        phone_number = request.json.get('phone')
+        otp_code = request.json.get('otp')
+        
+        if not phone_number or not otp_code:
+            return jsonify({"success": False, "message": "Phone number and OTP are required"}), 400
+
+        # Initialize Twilio client
+        account_sid = 'ACbcb45be0e21a9b19a5a0eee62a5a14e9'
+        auth_token = 'e057d3fe136b92d8c119678e5d7cf9d5'
+        verify_sid = 'VAfd2b570cf9e0fc7f86256c681a6af593'
+        
+        client = Client(account_sid, auth_token)
+
+        # Verify OTP
+        verification_check = client.verify.v2.services(verify_sid) \
+            .verification_checks \
+            .create(to=phone_number, code=otp_code)
+
+        if verification_check.status == 'approved':
+            return jsonify({
+                "success": True,
+                "message": "OTP verified successfully"
+            })
+        else:
+            return jsonify({
+                "success": False,
+                "message": "Invalid OTP"
+            }), 400
+
+    except Exception as e:
+        logger.error(f"Error verifying OTP: {str(e)}", exc_info=True)
+        return jsonify({
+            "success": False,
+            "message": "OTP verification failed"
+        }), 500
+        
+# Notificaton section 
+
+@visitor_bp.route('/api/get_pending_requests_details', methods=['GET'])
+def get_pending_requests_details():
+    if 'user_id' not in session:
+        return jsonify({"success": False, "message": "Unauthorized"}), 401
+
+    try:
+        today = datetime.now().date()
+        with closing(get_connection()) as conn:
+            with conn.cursor() as cursor:
+                # Get the detailed requests
+                cursor.execute("""
+                    SELECT 
+                        RequestID,
+                        MeetingWith,
+                        Purpose,
+                        CONVERT(varchar, EventDate, 120) as EventDate,
+                        CONVERT(varchar, StartTime, 120) as StartTime,
+                        RequestStatus
+                    FROM VisitorRequestManagement
+                    WHERE CAST(EventDate AS DATE) >= ?
+                    AND RequestStatus = 'Pending'
+                    ORDER BY EventDate ASC
+                """, (today,))
+                
+                requests = []
+                for row in cursor.fetchall():
+                    requests.append({
+                        "requestId": row[0],
+                        "meetingWith": row[1],  # Fixed casing to match frontend
+                        "purpose": row[2],
+                        "eventDate": row[3],
+                        "startTime": row[4],  # Changed from eventTime to startTime
+                        "status": row[5]  # Changed from requeststatus to status
+                    })
+                
+                return jsonify({
+                    "success": True,
+                    "requests": requests,
+                    "count": len(requests)  # Also return the count
+                })
+
+    except Exception as e:
+        logger.error(f"Error fetching request details: {str(e)}")
+        return jsonify({
+            "success": False,
+            "message": str(e)
+        }), 500
+        
+@visitor_bp.route('/api/update_request_status', methods=['POST'])
+def update_request_status():
+    if 'user_id' not in session:
+        return jsonify({"success": False, "message": "Unauthorized"}), 401
+
+    try:
+        data = request.get_json()
+        request_id = data.get('requestId')
+        status = data.get('status')
+
+        if not request_id or not status:
+            return jsonify({"success": False, "message": "Missing required fields"}), 400
+
+        with closing(get_connection()) as conn:
+            with conn.cursor() as cursor:
+                cursor.execute("""
+                    UPDATE VisitorRequestManagement
+                    SET RequestStatus = ?, 
+                        ResponseDateTime = GETDATE(),
+                        ModifiedOn = GETDATE()
+                    WHERE RequestID = ?
+                """, (status, session['user_id'], request_id))
+                conn.commit()
+
+        return jsonify({
+            "success": True,
+            "message": "Request status updated successfully"
+        })
+
+    except Exception as e:
+        logger.error(f"Error updating request status: {str(e)}")
+        return jsonify({
+            "success": False,
+            "message": str(e)
+        }), 500
     
 @visitor_bp.route('/logout')
 def logout():

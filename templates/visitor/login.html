@@ -95,36 +95,7 @@
 
             btn.appendChild(circle);
         });
-        function addNewCustomer() {
-            const name = document.getElementById('customerName').value;
-            // Add company input if needed
-            // const company = document.getElementById('companyName').value;
-
-            if (!name) {
-                alert('Customer name is required');
-                return;
-            }
-
-            fetch('/visitor/add_customer', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({
-                    customerName: name,
-                    pdfPath: '' // Set this if you handle PDF upload
-                })
-            })
-                .then(response => response.json())
-                .then(data => {
-                    if (data.success) {
-                        alert(`New customer "${name}" added!\nLink: ${data.link}`);
-                        // Optionally show QR code image
-                        // You can display the QR code using <img src="data.qrCodePath">
-                        closeModal('newCustomerModal');
-                    } else {
-                        alert('Error: ' + data.error);
-                    }
-                });
-        }
+        
     </script>
 </body>
 

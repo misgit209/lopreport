@@ -1,11 +1,13 @@
 from flask import Flask, render_template
 from visitor.routes import visitor_bp
+from request.routes import request_bp
 
 app = Flask(__name__)
 
 app.secret_key = '2325'
 
 app.register_blueprint(visitor_bp, url_prefix='/visitor')
+app.register_blueprint(request_bp, url_prefix='/request')
 
 @app.route('/')
 def index():

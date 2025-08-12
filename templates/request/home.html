@@ -1,0 +1,1351 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Hall Booking System</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link href="https://unpkg.com/aos@2.3.1/dist/aos.css" rel="stylesheet">
+    <link rel="stylesheet" href="/static/css/request/home.css">
+    <style>
+        :root {
+            --primary: #28623A;
+            --primary-dark: #1D4A2A;
+            --primary-light: rgba(40, 98, 58, 0.1);
+            --primary-accent: #0F2027;
+            --secondary: #203A43;
+            --danger: #c13640;
+            --warning: #dfb4a5;
+            --light: #f8f9fa;
+            --text-light: #f5f5f5;
+            --text-muted: #6c757d;
+            --border-light: rgba(0, 0, 0, 0.1);
+            --shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.1);
+            --shadow-md: 0 4px 6px rgba(0, 0, 0, 0.1);
+            --shadow-lg: 0 10px 15px rgba(0, 0, 0, 0.1);
+            --transition: all 0.3s ease;
+            --max-width: 1200px;
+        }
+
+        /* Light Theme (default) */
+        :root {
+            --bg-color: #ffffff;
+            --text-color: #212529;
+            --card-bg: #f8f9fa;
+            --navbar-bg: var(--primary);
+            --sidebar-bg: #ffffff;
+            --border-color: #dee2e6;
+            --input-bg: #ffffff;
+            --modal-bg: #ffffff;
+        }
+
+        /* Dark Theme */
+        .dark-mode {
+            --bg-color: #212529;
+            --text-color: #f8f9fa;
+            --card-bg: #343a40;
+            --navbar-bg: var(--primary-dark);
+            --sidebar-bg: #343a40;
+            --border-color: #495057;
+            --input-bg: #343a40;
+            --modal-bg: #343a40;
+            --text-muted: #adb5bd;
+            --border-light: rgba(255, 255, 255, 0.1);
+        }
+
+        body {
+            background-color: var(--bg-color);
+            color: var(--text-color);
+            transition: var(--transition);
+            min-height: 100vh;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+
+        .container {
+            max-width: var(--max-width);
+            padding: 0 20px;
+        }
+
+        .navbar {
+            background-color: var(--navbar-bg) !important;
+            box-shadow: var(--shadow-md);
+        }
+
+        .navbar-brand {
+            font-weight: 600;
+            color: var(--text-light) !important;
+        }
+
+        .navbar-brand i {
+            margin-right: 8px;
+        }
+
+        .nav-link {
+            color: rgba(255, 255, 255, 0.8) !important;
+            transition: var(--transition);
+        }
+
+        .nav-link:hover {
+            color: white !important;
+        }
+
+        .nav-link.active {
+            color: white !important;
+            font-weight: 500;
+        }
+
+        .main-container {
+            padding: 20px 0;
+            margin-top: 20px;
+        }
+
+        .dashboard-card {
+            background-color: var(--card-bg);
+            border-radius: 10px;
+            padding: 20px;
+            margin-bottom: 20px;
+            box-shadow: var(--shadow-sm);
+            transition: var(--transition);
+            border: 1px solid var(--border-color);
+        }
+
+        .dashboard-card:hover {
+            box-shadow: var(--shadow-md);
+            transform: translateY(-3px);
+        }
+
+        .card-title {
+            font-weight: 600;
+            margin-bottom: 15px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            color: var(--text-color);
+        }
+
+        .request-list {
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+        }
+
+        .request-item {
+            background-color: var(--primary-light);
+            padding: 15px;
+            border-radius: 8px;
+            border-left: 4px solid var(--primary);
+            transition: var(--transition);
+        }
+
+        .request-item:hover {
+            background-color: rgba(40, 98, 58, 0.2);
+        }
+
+        .request-title {
+            font-weight: 600;
+            color: var(--text-color);
+        }
+
+        .request-meta {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 15px;
+            font-size: 0.9rem;
+            color: var(--text-muted);
+        }
+
+        .request-meta-item {
+            display: flex;
+            align-items: center;
+            gap: 5px;
+        }
+
+        .badge-approved {
+            background-color: var(--primary);
+            color: white;
+        }
+
+        .badge-pending {
+            background-color: var(--warning);
+            color: var(--text-color);
+        }
+
+        .badge-rejected {
+            background-color: var(--danger);
+            color: white;
+        }
+
+        .activity-timeline {
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+        }
+
+        .activity-item {
+            position: relative;
+            padding-left: 20px;
+        }
+
+        .activity-item::before {
+            content: "";
+            position: absolute;
+            left: 0;
+            top: 0;
+            bottom: 0;
+            width: 2px;
+            background-color: var(--primary);
+        }
+
+        .activity-content h6 {
+            font-weight: 600;
+            margin-bottom: 5px;
+            color: var(--text-color);
+        }
+
+        .activity-content p {
+            margin-bottom: 5px;
+            font-size: 0.9rem;
+            color: var(--text-muted);
+        }
+
+        .activity-content span {
+            font-size: 0.8rem;
+            color: var(--text-muted);
+        }
+
+        .fab {
+            position: fixed;
+            bottom: 30px;
+            right: 30px;
+            width: 60px;
+            height: 60px;
+            border-radius: 50%;
+            background: var(--primary);
+            color: white;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 24px;
+            box-shadow: var(--shadow-lg);
+            cursor: pointer;
+            z-index: 1000;
+            transition: var(--transition);
+        }
+
+        .fab:hover {
+            transform: scale(1.1);
+            background: var(--primary-dark);
+        }
+
+        .dark-mode-toggle {
+            width: 40px;
+            height: 20px;
+            background-color: var(--primary);
+            border-radius: 20px;
+            position: relative;
+            cursor: pointer;
+            transition: var(--transition);
+        }
+
+        .dark-mode-toggle::before {
+            content: "";
+            position: absolute;
+            width: 16px;
+            height: 16px;
+            border-radius: 50%;
+            background-color: white;
+            top: 2px;
+            left: 2px;
+            transition: var(--transition);
+        }
+
+        .dark-mode-toggle.active {
+            background-color: var(--secondary);
+        }
+
+        .dark-mode-toggle.active::before {
+            left: 22px;
+        }
+
+        .user-avatar {
+            width: 32px;
+            height: 32px;
+            border-radius: 50%;
+            object-fit: cover;
+        }
+
+        .modal-content {
+            background-color: var(--modal-bg);
+            color: var(--text-color);
+            border: none;
+            box-shadow: var(--shadow-lg);
+        }
+
+        .modal-header {
+            border-bottom: 1px solid var(--border-color);
+            background: var(--primary);
+            color: white;
+        }
+
+        .btn-close {
+            filter: invert(1);
+        }
+
+        .form-control,
+        .form-select {
+            background-color: var(--input-bg);
+            color: var(--text-color);
+            border: 1px solid var(--border-color);
+            transition: var(--transition);
+        }
+
+        .form-control:focus,
+        .form-select:focus {
+            border-color: var(--primary);
+            box-shadow: 0 0 0 0.25rem rgba(40, 98, 58, 0.25);
+        }
+
+        .required-field::after {
+            content: " *";
+            color: var(--danger);
+        }
+
+        .btn-primary {
+            background-color: var(--primary);
+            border-color: var(--primary);
+        }
+
+        .btn-primary:hover {
+            background-color: var(--primary-dark);
+            border-color: var(--primary-dark);
+        }
+
+        .btn-outline-secondary {
+            border-color: var(--border-color);
+            color: var(--text-color);
+        }
+
+        .btn-outline-secondary:hover {
+            background-color: var(--border-color);
+            color: var(--text-color);
+        }
+
+        .stats-number {
+            font-size: 2rem;
+            font-weight: 700;
+            color: var(--primary);
+        }
+
+        /* Responsive adjustments */
+        @media (max-width: 768px) {
+            .main-container {
+                padding: 15px 0;
+            }
+
+            .dashboard-card {
+                padding: 15px;
+            }
+
+            .request-meta {
+                flex-direction: column;
+                gap: 8px;
+            }
+
+            .stats-number {
+                font-size: 1.5rem;
+            }
+        }
+
+        /* Calendar Styles */
+        .calendar-container {
+            min-height: 500px;
+            background-color: var(--card-bg);
+            border-radius: 10px;
+            padding: 20px;
+            box-shadow: var(--shadow-sm);
+            border: 1px solid var(--border-color);
+        }
+
+        .calendar-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+        }
+
+        .calendar-month-year {
+            font-size: 1.5rem;
+            font-weight: 600;
+            color: var(--text-color);
+        }
+
+        .calendar-grid {
+            display: grid;
+            grid-template-columns: repeat(7, 1fr);
+            gap: 1px;
+            background: var(--border-light);
+            border-radius: 8px;
+            overflow: hidden;
+        }
+
+        .calendar-day-header {
+            background-color: var(--primary);
+            color: white;
+            font-weight: 500;
+            padding: 15px 10px;
+            text-align: center;
+            font-size: 0.875rem;
+        }
+
+        .calendar-day {
+            height: 100px;
+            padding: 8px;
+            border: 1px solid var(--border-light);
+            overflow-y: auto;
+            background-color: var(--bg-color);
+            cursor: pointer;
+            transition: var(--transition);
+            position: relative;
+        }
+
+        .calendar-day:hover {
+            background-color: var(--primary-light);
+        }
+
+        .calendar-day.other-month {
+            background: var(--card-bg);
+            color: var(--text-muted);
+        }
+
+        .calendar-day.today {
+            background-color: var(--primary-light);
+            border: 2px solid var(--primary);
+        }
+
+        .calendar-day.has-booking {
+            background-color: rgba(40, 98, 58, 0.1);
+        }
+
+        .calendar-day.has-booking::after {
+            content: '';
+            position: absolute;
+            top: 5px;
+            right: 5px;
+            width: 8px;
+            height: 8px;
+            background: var(--primary);
+            border-radius: 50%;
+        }
+
+        .day-number {
+            font-weight: 600;
+            font-size: 0.875rem;
+            margin-bottom: 5px;
+            color: var(--text-color);
+        }
+
+        .calendar-day.other-month .day-number {
+            color: var(--text-muted);
+        }
+
+        .day-bookings {
+            font-size: 0.75rem;
+            color: var(--primary);
+            font-weight: 500;
+        }
+
+        .calendar-event {
+            font-size: 0.7rem;
+            padding: 2px 4px;
+            margin-bottom: 2px;
+            border-radius: 3px;
+            background-color: var(--primary);
+            color: white;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        /* Responsive adjustments */
+        @media (max-width: 768px) {
+            .calendar-day {
+                height: 80px;
+                padding: 5px;
+            }
+
+            .day-number {
+                font-size: 0.75rem;
+            }
+
+            .calendar-month-year {
+                font-size: 1.25rem;
+            }
+
+            .calendar-day-header {
+                padding: 10px 5px;
+            }
+        }
+
+        /*  Mini Calendar Styles */
+        .mini-calendar-container {
+            width: 100%;
+            padding: 5px;
+            height: 300px;
+            /* total calendar height */
+            display: flex;
+            flex-direction: column;
+        }
+
+        #miniCalendar {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+        }
+
+        #miniCalendar .calendar-header {
+            margin-bottom: 8px;
+        }
+
+        #miniCalendar .calendar-month-year {
+            font-size: 0.95rem;
+        }
+
+        #miniCalendar .mini-calendar-grid {
+            display: grid;
+            grid-template-columns: repeat(7, 1fr);
+            grid-auto-rows: 1fr;
+            /* each row takes equal height */
+            gap: 1px;
+            flex: 1;
+            text-align: center;
+        }
+
+        #miniCalendar .mini-day-header {
+            font-size: 14px;
+            font-weight: 500;
+            color: var(--text-muted);
+            padding: 2px 1px;
+        }
+
+        #miniCalendar .mini-calendar-day {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 14px;
+            border-radius: 3px;
+            cursor: pointer;
+            transition: var(--transition);
+            position: relative;
+        }
+
+        #miniCalendar .mini-calendar-day:hover {
+            background-color: var(--primary-light);
+        }
+
+        #miniCalendar .mini-calendar-day.today {
+            background-color: var(--primary);
+            color: white;
+            font-weight: 600;
+        }
+
+        #miniCalendar .mini-calendar-day.other-month {
+            color: var(--text-muted);
+            opacity: 0.5;
+        }
+
+        #miniCalendar .mini-calendar-day.has-booking::after {
+            content: '';
+            position: absolute;
+            bottom: 3px;
+            right: 3px;
+            width: 4px;
+            height: 4px;
+            background: red;
+            border-radius: 50%;
+        }
+
+        #miniCalendar .mini-calendar-day.today.has-booking::after {
+            background: white;
+        }
+
+        /* Responsive */
+        @media (max-width: 768px) {
+            #miniCalendar .mini-calendar-day {
+                font-size: 0.6rem;
+            }
+        }
+    </style>
+</head>
+
+<body>
+    <!-- Navigation Bar -->
+    <nav class="navbar navbar-expand-lg navbar-dark">
+        <div class="container">
+            <a class="navbar-brand" href="#">
+                <i class="fas fa-calendar-alt"></i>
+                <span class="d-none d-sm-inline">Hall Booking</span>
+            </a>
+
+            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarContent">
+                <i class="fas fa-bars"></i>
+            </button>
+
+            <div class="collapse navbar-collapse" id="navbarContent">
+                <ul class="navbar-nav me-auto mb-2 mb-lg-0">
+                    <li class="nav-item">
+                        <a class="nav-link active" href="#" id="dashboardNav">
+                            <i class="fas fa-home me-1"></i> Dashboard
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="#" id="calendarNav">
+                            <i class="fas fa-calendar me-1"></i> Calendar
+                        </a>
+                    </li>
+                </ul>
+
+                <div class="d-flex align-items-center">
+                    <div class="form-check form-switch me-3">
+                        <input class="form-check-input" type="checkbox" id="darkModeToggle">
+                        <label class="form-check-label" for="darkModeToggle">
+                            <i class="fas fa-moon"></i>
+                        </label>
+                    </div>
+
+                    <div class="dropdown">
+                        <a class="nav-link dropdown-toggle d-flex align-items-center" href="#" role="button"
+                            data-bs-toggle="dropdown">
+                            <img src="https://ui-avatars.com/api/?name=John+Doe&background=random"
+                                class="rounded-circle me-2" width="32" height="32">
+                            <span class="d-none d-md-inline">John Doe</span>
+                        </a>
+                        <ul class="dropdown-menu dropdown-menu-end">
+                            <li><a class="dropdown-item text-danger" href="#"><i
+                                        class="fas fa-sign-out-alt me-2"></i>Logout</a></li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Main Content -->
+    <div class="container main-container py-4">
+        <!-- Dashboard Section -->
+        <div id="dashboardSection">
+            <!-- Dashboard Header -->
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <h2 class="mb-0">Dashboard</h2>
+                <div class="d-flex">
+                    <button class="btn btn-primary me-2" data-bs-toggle="modal" data-bs-target="#bookingModal">
+                        <i class="fas fa-plus me-1"></i> New Booking
+                    </button>
+                </div>
+            </div>
+
+            <!-- Stats Cards -->
+            <div class="row mb-4">
+                <div class="col-md-3 col-6 mb-3">
+                    <div class="dashboard-card h-100">
+                        <div class="card-title">
+                            <img src="/static/svgs/approved.svg" alt="approve icon" class="me-2" width="24" height="24">
+                            <span>Approved</span>
+                        </div>
+                        <div class="stats-number">{{ approved_count }}</div>
+                        <p class="text-muted small mb-0">Approved Request(s)</p>
+                    </div>
+                </div>
+                <div class="col-md-3 col-6 mb-3">
+                    <div class="dashboard-card h-100">
+                        <div class="card-title">
+                            <img src="/static/svgs/pending.svg" alt="pending icon" class="me-2" width="24" height="24">
+                            <span>Pending</span>
+                        </div>
+                        <div class="stats-number">{{ pending_count }}</div>
+                        <p class="text-muted small mb-0">Pending Request(s)</p>
+                    </div>
+                </div>
+                <div class="col-md-3 col-6 mb-3">
+                    <div class="dashboard-card h-100">
+                        <div class="card-title">
+                            <img src="/static/svgs/rejected.svg" alt="rejected icon" class="me-2" width="24" height="24">
+                            <span>Rejected</span>
+                        </div>
+                        <div class="stats-number">{{ rejected_count }}</div>
+                        <p class="text-muted small mb-0">Rejected Request(s)</p>
+                    </div>
+                </div>
+                <div class="col-md-3 col-6 mb-3">
+                    <div class="dashboard-card h-100">
+                        <div class="card-title">
+                            <img src="/static/svgs/today.svg" alt="today icon" class="me-2" width="24" height="24">
+                            <span>Today</span>
+                        </div>
+                        <div class="stats-number">{{ today_count }}</div>
+                        <p class="text-muted small mb-0">Upcoming</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Main Content Grid -->
+            <div class="row">
+                <!-- Left Column - Upcoming Bookings -->
+                <div class="col-lg-8">
+                    <div class="dashboard-card mb-4">
+                        <div class="d-flex justify-content-between align-items-center mb-3">
+                            <h5 class="card-title mb-0">
+                                <i class="fas fa-calendar-week me-2"></i>
+                                <span>Upcoming Bookings</span>
+                            </h5>
+                            <a href="#" class="small">View All</a>
+                        </div>
+
+                        <div class="request-list">
+                            {% for booking in upcoming_bookings %}
+                            <div class="request-item">
+                                <div class="d-flex justify-content-between align-items-start mb-2">
+                                    <h6 class="request-title mb-0">{{ booking.meeting_with }}</h6>
+                                    <span
+                                        class="badge {% if booking.status == 'Approved' %}badge-approved{% elif booking.status == 'Pending' %}badge-pending{% else %}badge-rejected{% endif %}">
+                                        {{ booking.status }}
+                                    </span>
+                                </div>
+                                <div class="request-meta">
+                                    <span class="request-meta-item">
+                                        <i class="fas fa-building me-1"></i> {{ booking.hall_name }}
+                                    </span>
+                                    <span class="request-meta-item">
+                                        <i class="fas fa-calendar me-1"></i> {{ booking.date_display }}, {{
+                                        booking.time_display }}
+                                    </span>
+                                </div>
+                            </div>
+                            {% else %}
+                            <div class="text-center py-3">
+                                <i class="fas fa-calendar-plus fa-2x text-muted mb-2"></i>
+                                <p class="text-muted">No upcoming bookings found</p>
+                            </div>
+                            {% endfor %}
+                        </div>
+                    </div>
+
+                    <!-- Mini Calendar Widget -->
+                    <div class="dashboard-card">
+                        <div class="d-flex justify-content-between align-items-center mb-3">
+                            <h5 class="card-title mb-0">
+                                <i class="fas fa-calendar-alt me-2"></i>
+                                <span>Calendar Overview</span>
+                            </h5>
+                            <a href="#" id="viewFullCalendar" class="small">View Full Calendar</a>
+                        </div>
+                        <div id="miniCalendar" class="mini-calendar-container">
+                            <!-- Mini calendar will be generated by JavaScript -->
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Right Column - Recent Activity -->
+                <div class="col-lg-4">
+                    <div class="dashboard-card mb-4">
+                        <div class="d-flex justify-content-between align-items-center mb-3">
+                            <h5 class="card-title mb-0">
+                                <i class="fas fa-history me-2"></i>
+                                <span>Recent Activity</span>
+                            </h5>
+                            <a href="#" class="small">View All</a>
+                        </div>
+
+                        <div class="activity-timeline">
+                            {% for activity in recent_activities %}
+                            <div class="activity-item">
+                                <div class="d-flex">
+                                    <div class="activity-icon me-3">
+                                        <div class="bg-{{ activity.color }} bg-opacity-10 text-{{ activity.color }} rounded-circle p-2"
+                                            style="width: 40px; height: 40px; display: flex; align-items: center; justify-content: center;">
+                                            <i class="fas {{ activity.icon }}"></i>
+                                        </div>
+                                    </div>
+                                    <div class="activity-content">
+                                        <h6 class="mb-1">Booking {{ activity.type|title }}</h6>
+                                        <p class="small text-muted mb-0">{{ activity.message }}</p>
+                                        <span class="small text-muted">{{ activity.time }}</span>
+                                    </div>
+                                </div>
+                            </div>
+                            {% else %}
+                            <div class="text-center py-3 text-muted">
+                                No recent activities found
+                            </div>
+                            {% endfor %}
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Calendar Section (Hidden by default) -->
+        <div id="calendarSection" class="d-none">
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <h2 class="mb-0">Booking Calendar</h2>
+                <button class="btn btn-outline-secondary" id="backToDashboard">
+                    <i class="fas fa-arrow-left me-1"></i> Back to Dashboard
+                </button>
+            </div>
+
+            <div class="dashboard-card">
+                <div class="calendar-header">
+                    <h4 id="monthYear" class="calendar-month-year mb-0">August 2025</h4>
+                    <div>
+                        <button id="prevMonth" class="btn btn-sm btn-outline-secondary me-2">
+                            <i class="fas fa-chevron-left"></i>
+                        </button>
+                        <button id="todayBtn" class="btn btn-sm btn-outline-secondary me-2">Today</button>
+                        <button id="nextMonth" class="btn btn-sm btn-outline-secondary">
+                            <i class="fas fa-chevron-right"></i>
+                        </button>
+                    </div>
+                </div>
+
+                <div class="calendar-grid" id="calendarGrid">
+                    <!-- Calendar will be generated by JavaScript -->
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Floating Action Button -->
+    <div class="fab d-md-none">
+        <i class="fas fa-plus"></i>
+    </div>
+
+    <!-- Booking Modal -->
+    <div class="modal fade" id="bookingModal" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog modal-lg">
+            <div class="modal-content">
+                <div class="modal-header bg-primary text-white">
+                    <h5 class="modal-title"><i class="fas fa-calendar-plus me-2"></i>New Hall Booking Request</h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"
+                        aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <form id="hallBookingForm">
+                        <div class="row mb-3">
+                            <div class="col-md-6 mb-3">
+                                <label for="requesterName" class="form-label required-field">Requester Name</label>
+                                <input type="text" class="form-control" id="requesterName" name="requesterName"
+                                    required>
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <label for="department" class="form-label required-field">Department</label>
+                                <input type="text" class="form-control" id="department" name="department" required>
+                            </div>
+                        </div>
+
+                        <div class="row mb-3">
+                            <div class="col-md-6 mb-3">
+                                <label for="requesterEmail" class="form-label required-field">Email</label>
+                                <input type="email" class="form-control" id="requesterEmail" name="requesterEmail"
+                                    required>
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <label for="requesterPhone" class="form-label required-field">Phone Number</label>
+                                <input type="tel" class="form-control" id="requesterPhone" name="requesterPhone"
+                                    required>
+                            </div>
+                        </div>
+
+                        <div class="row mb-3">
+                            <div class="col-md-6 mb-3">
+                                <label for="hallName" class="form-label required-field">Hall Name</label>
+                                <select class="form-select" id="hallName" name="hallName" required>
+                                    <option value="" selected disabled>Select Hall</option>
+                                    <option value="Conference Room 1">Conference Room 1</option>
+                                    <option value="Conference Room 2">Conference Room 2</option>
+                                    <option value="Conference Room 3">Conference Room 3</option>
+                                    <option value="Conference Room 4">Conference Room 4</option>
+                                </select>
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <label for="eventDate" class="form-label required-field">Date</label>
+                                <input type="date" class="form-control" id="eventDate" name="eventDate" required>
+                            </div>
+                        </div>
+
+                        <div class="row mb-3">
+                            <div class="col-md-6 mb-3">
+                                <label for="meetingWith" class="form-label required-field">Meeting With</label>
+                                <input type="text" class="form-control" id="meetingWith" name="meetingWith" required>
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <label for="expectedAttendees" class="form-label required-field">Expected
+                                    Attendees</label>
+                                <input type="number" class="form-control" id="expectedAttendees"
+                                    name="expectedAttendees" min="1" required>
+                            </div>
+                        </div>
+
+                        <div class="row mb-3">
+                            <div class="col-md-6 mb-3">
+                                <label for="startTime" class="form-label required-field">Start Time</label>
+                                <input type="time" class="form-control" id="startTime" name="startTime" required>
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <label for="endTime" class="form-label required-field">End Time</label>
+                                <input type="time" class="form-control" id="endTime" name="endTime" required>
+                            </div>
+                        </div>
+
+                        <div class="mb-3">
+                            <label for="purpose" class="form-label required-field">Purpose of Booking</label>
+                            <textarea class="form-control" id="purpose" rows="3" name="purpose" required></textarea>
+                        </div>
+
+                        <div class="d-grid gap-2 d-md-flex justify-content-md-end mt-4">
+                            <button type="reset" class="btn btn-outline-secondary me-md-2">
+                                <i class="fas fa-undo me-1"></i> Reset
+                            </button>
+                            <button type="submit" class="btn btn-primary">
+                                <i class="fas fa-paper-plane me-1"></i> Submit Request
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Success Modal -->
+    <div class="modal fade" id="successModal" tabindex="-1">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header bg-success text-white">
+                    <h5 class="modal-title"><i class="fas fa-check-circle me-2"></i>Request Submitted</h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <p class="mb-2"><strong>Your hall booking request has been submitted successfully!</strong></p>
+                    <p class="mb-1"><strong>Request ID:</strong> <span id="modalRequestId"></span></p>
+                    <p class="mb-1"><strong>Status:</strong> <span class="badge bg-warning text-dark">Pending</span></p>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="https://unpkg.com/aos@2.3.1/dist/aos.js"></script>
+    <script src="/static/js/request/script.js"></script>
+    <script>
+        // Initialize AOS animations
+        AOS.init();
+
+        // Dark mode toggle
+        const darkModeToggle = document.getElementById('darkModeToggle');
+        darkModeToggle.addEventListener('change', function () {
+            document.body.classList.toggle('dark-mode');
+            localStorage.setItem('darkMode', this.checked);
+        });
+
+        // Check for saved dark mode preference
+        if (localStorage.getItem('darkMode') === 'true') {
+            darkModeToggle.checked = true;
+            document.body.classList.add('dark-mode');
+        }
+
+        // Navigation functionality
+        const dashboardNav = document.getElementById('dashboardNav');
+        const calendarNav = document.getElementById('calendarNav');
+        const dashboardSection = document.getElementById('dashboardSection');
+        const calendarSection = document.getElementById('calendarSection');
+        const viewFullCalendarBtn = document.getElementById('viewFullCalendar');
+        const backToDashboardBtn = document.getElementById('backToDashboard');
+
+        function showDashboard() {
+            dashboardSection.classList.remove('d-none');
+            calendarSection.classList.add('d-none');
+            dashboardNav.classList.add('active');
+            calendarNav.classList.remove('active');
+        }
+
+        function showCalendar() {
+            dashboardSection.classList.add('d-none');
+            calendarSection.classList.remove('d-none');
+            dashboardNav.classList.remove('active');
+            calendarNav.classList.add('active');
+            generateMainCalendar();
+        }
+
+        dashboardNav.addEventListener('click', (e) => {
+            e.preventDefault();
+            showDashboard();
+        });
+
+        calendarNav.addEventListener('click', (e) => {
+            e.preventDefault();
+            showCalendar();
+        });
+
+        viewFullCalendarBtn.addEventListener('click', (e) => {
+            e.preventDefault();
+            showCalendar();
+        });
+
+        backToDashboardBtn.addEventListener('click', (e) => {
+            e.preventDefault();
+            showDashboard();
+        });
+
+        // Calendar functionality
+        let currentDate = new Date();
+        const monthNames = ['January', 'February', 'March', 'April', 'May', 'June',
+            'July', 'August', 'September', 'October', 'November', 'December'];
+        const dayNames = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+
+        // Sample booking data
+        const bookings = {
+            '2025-08-15': [
+                { title: 'Team Meeting', room: 'Conference Room 1', time: '2:00 PM - 4:00 PM' }
+            ],
+            '2025-08-16': [
+                { title: 'Client Presentation', room: 'Conference Room 2', time: '10:00 AM - 12:00 PM' },
+                { title: 'Training Session', room: 'Conference Room 3', time: '3:00 PM - 5:00 PM' }
+            ],
+            '2025-08-20': [
+                { title: 'Board Meeting', room: 'Conference Room 1', time: '9:00 AM - 11:00 AM' }
+            ],
+            '2025-08-25': [
+                { title: 'Workshop', room: 'Conference Room 4', time: '1:00 PM - 4:00 PM' }
+            ]
+        };
+
+        // Generate Main Calendar (Full Calendar View)
+        function generateMainCalendar(month = currentDate.getMonth(), year = currentDate.getFullYear()) {
+            currentDate.setMonth(month);
+            currentDate.setFullYear(year);
+
+            // Update month/year display
+            document.getElementById('monthYear').textContent = `${monthNames[month]} ${year}`;
+
+            const calendarGrid = document.getElementById('calendarGrid');
+            calendarGrid.innerHTML = '';
+
+            // Add day headers
+            dayNames.forEach(day => {
+                const dayHeader = document.createElement('div');
+                dayHeader.className = 'calendar-day-header';
+                dayHeader.textContent = day;
+                calendarGrid.appendChild(dayHeader);
+            });
+
+            // Get first day of month and number of days
+            const firstDay = new Date(year, month, 1);
+            const lastDay = new Date(year, month + 1, 0);
+            const daysInMonth = lastDay.getDate();
+            const startingDayOfWeek = firstDay.getDay();
+
+            // Get previous month's last few days
+            const prevMonth = new Date(year, month, 0);
+            const daysInPrevMonth = prevMonth.getDate();
+
+            // Add previous month's trailing days
+            for (let i = startingDayOfWeek - 1; i >= 0; i--) {
+                const dayElement = createMainCalendarDay(
+                    daysInPrevMonth - i,
+                    true,
+                    year,
+                    month - 1
+                );
+                calendarGrid.appendChild(dayElement);
+            }
+
+            // Add current month's days
+            for (let day = 1; day <= daysInMonth; day++) {
+                const dayElement = createMainCalendarDay(day, false, year, month);
+                calendarGrid.appendChild(dayElement);
+            }
+
+            // Add next month's leading days
+            const totalCells = calendarGrid.children.length - 7; // Subtract day headers
+            const remainingCells = 42 - totalCells; // 6 rows × 7 days
+            for (let day = 1; day <= remainingCells; day++) {
+                const dayElement = createMainCalendarDay(
+                    day,
+                    true,
+                    year,
+                    month + 1
+                );
+                calendarGrid.appendChild(dayElement);
+            }
+        }
+
+        function createMainCalendarDay(day, isOtherMonth, year, month) {
+            const dayElement = document.createElement('div');
+            dayElement.className = 'calendar-day';
+
+            if (isOtherMonth) {
+                dayElement.classList.add('other-month');
+            }
+
+            // Check if it's today
+            const today = new Date();
+            const dayDate = new Date(year, month, day);
+            if (!isOtherMonth &&
+                dayDate.getDate() === today.getDate() &&
+                dayDate.getMonth() === today.getMonth() &&
+                dayDate.getFullYear() === today.getFullYear()) {
+                dayElement.classList.add('today');
+            }
+
+            // Create day number
+            const dayNumber = document.createElement('div');
+            dayNumber.className = 'day-number';
+            dayNumber.textContent = day;
+            dayElement.appendChild(dayNumber);
+
+            // Check for bookings
+            const dateString = `${year}-${String(month + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
+            if (bookings[dateString] && !isOtherMonth) {
+                dayElement.classList.add('has-booking');
+
+                // Add booking events
+                bookings[dateString].forEach(booking => {
+                    const eventElement = document.createElement('div');
+                    eventElement.className = 'calendar-event';
+                    eventElement.textContent = booking.title;
+                    eventElement.title = `${booking.title} - ${booking.room} (${booking.time})`;
+                    dayElement.appendChild(eventElement);
+                });
+
+                // Add click event
+                dayElement.addEventListener('click', () => {
+                    showBookingDetails(dateString, bookings[dateString]);
+                });
+            }
+
+            return dayElement;
+        }
+
+        // Generate Mini Calendar (Dashboard Widget)
+        function generateMiniCalendar(month = currentDate.getMonth(), year = currentDate.getFullYear()) {
+            const miniCalendar = document.getElementById('miniCalendar');
+            miniCalendar.innerHTML = '';
+
+            // Create header with navigation
+            const header = document.createElement('div');
+            header.className = 'calendar-header d-flex justify-content-between align-items-center';
+
+            const monthYearSpan = document.createElement('span');
+            monthYearSpan.className = 'calendar-month-year';
+            monthYearSpan.textContent = `${monthNames[month]} ${year}`;
+
+            const navButtons = document.createElement('div');
+            navButtons.innerHTML = `
+                <button class="btn btn-sm btn-outline-secondary me-1" id="miniPrevMonth">
+                    <i class="fas fa-chevron-left"></i>
+                </button>
+                <button class="btn btn-sm btn-outline-secondary" id="miniNextMonth">
+                    <i class="fas fa-chevron-right"></i>
+                </button>
+            `;
+
+            header.appendChild(monthYearSpan);
+            header.appendChild(navButtons);
+            miniCalendar.appendChild(header);
+
+            // Create calendar grid
+            const calendarGrid = document.createElement('div');
+            calendarGrid.className = 'mini-calendar-grid';
+
+            // Add day headers
+            dayNames.forEach(day => {
+                const dayHeader = document.createElement('div');
+                dayHeader.className = 'mini-day-header';
+                dayHeader.textContent = day.substring(0, 1);
+                calendarGrid.appendChild(dayHeader);
+            });
+
+            // Get calendar data
+            const firstDay = new Date(year, month, 1);
+            const lastDay = new Date(year, month + 1, 0);
+            const daysInMonth = lastDay.getDate();
+            const startingDayOfWeek = firstDay.getDay();
+
+            // Previous month days
+            const prevMonth = new Date(year, month, 0);
+            const daysInPrevMonth = prevMonth.getDate();
+
+            for (let i = startingDayOfWeek - 1; i >= 0; i--) {
+                const dayElement = createMiniCalendarDay(
+                    daysInPrevMonth - i,
+                    true,
+                    year,
+                    month - 1
+                );
+                calendarGrid.appendChild(dayElement);
+            }
+
+            // Current month days
+            for (let day = 1; day <= daysInMonth; day++) {
+                const dayElement = createMiniCalendarDay(day, false, year, month);
+                calendarGrid.appendChild(dayElement);
+            }
+
+            // Next month days
+            const totalCells = calendarGrid.children.length - 7; // Subtract day headers
+            const remainingCells = 42 - totalCells;
+            for (let day = 1; day <= remainingCells; day++) {
+                const dayElement = createMiniCalendarDay(
+                    day,
+                    true,
+                    year,
+                    month + 1
+                );
+                calendarGrid.appendChild(dayElement);
+            }
+
+            miniCalendar.appendChild(calendarGrid);
+
+            // Add navigation event listeners
+            document.getElementById('miniPrevMonth').addEventListener('click', () => {
+                const newMonth = month === 0 ? 11 : month - 1;
+                const newYear = month === 0 ? year - 1 : year;
+                generateMiniCalendar(newMonth, newYear);
+            });
+
+            document.getElementById('miniNextMonth').addEventListener('click', () => {
+                const newMonth = month === 11 ? 0 : month + 1;
+                const newYear = month === 11 ? year + 1 : year;
+                generateMiniCalendar(newMonth, newYear);
+            });
+        }
+
+        function createMiniCalendarDay(day, isOtherMonth, year, month) {
+            const dayElement = document.createElement('div');
+            dayElement.className = 'mini-calendar-day';
+            dayElement.textContent = day;
+
+            if (isOtherMonth) {
+                dayElement.classList.add('other-month');
+            }
+
+            // Check if it's today
+            const today = new Date();
+            const dayDate = new Date(year, month, day);
+            if (!isOtherMonth &&
+                dayDate.getDate() === today.getDate() &&
+                dayDate.getMonth() === today.getMonth() &&
+                dayDate.getFullYear() === today.getFullYear()) {
+                dayElement.classList.add('today');
+            }
+
+            // Check for bookings
+            const dateString = `${year}-${String(month + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
+            if (bookings[dateString] && !isOtherMonth) {
+                dayElement.classList.add('has-booking');
+            }
+
+            return dayElement;
+        }
+
+        function showBookingDetails(date, bookingList) {
+            const formattedDate = new Date(date).toLocaleDateString('en-US', {
+                weekday: 'long',
+                year: 'numeric',
+                month: 'long',
+                day: 'numeric'
+            });
+
+            let bookingDetails = `<strong>Bookings for ${formattedDate}:</strong><br><br>`;
+            bookingList.forEach((booking, index) => {
+                bookingDetails += `<div class="mb-2">
+                    <strong>${index + 1}. ${booking.title}</strong><br>
+                    <small class="text-muted">${booking.room} • ${booking.time}</small>
+                </div>`;
+            });
+
+            // Create modal element
+            const modalElement = document.createElement('div');
+            modalElement.className = 'modal fade';
+            modalElement.tabIndex = -1;
+            modalElement.innerHTML = `
+                <div class="modal-dialog">
+                    <div class="modal-content">
+                        <div class="modal-header bg-primary text-white">
+                            <h5 class="modal-title">
+                                <i class="fas fa-calendar-alt me-2"></i>Booking Details
+                            </h5>
+                            <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+                        </div>
+                        <div class="modal-body">
+                            ${bookingDetails}
+                        </div>
+                        <div class="modal-footer">
+                            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                        </div>
+                    </div>
+                </div>
+            `;
+
+            document.body.appendChild(modalElement);
+            const modal = new bootstrap.Modal(modalElement);
+            modal.show();
+
+            // Remove modal from DOM after it's closed
+            modalElement.addEventListener('hidden.bs.modal', function () {
+                document.body.removeChild(modalElement);
+            });
+        }
+
+        // Main calendar navigation
+        document.getElementById('prevMonth').addEventListener('click', () => {
+            currentDate.setMonth(currentDate.getMonth() - 1);
+            generateMainCalendar(currentDate.getMonth(), currentDate.getFullYear());
+        });
+
+        document.getElementById('nextMonth').addEventListener('click', () => {
+            currentDate.setMonth(currentDate.getMonth() + 1);
+            generateMainCalendar(currentDate.getMonth(), currentDate.getFullYear());
+        });
+
+        document.getElementById('todayBtn').addEventListener('click', () => {
+            currentDate = new Date();
+            generateMainCalendar(currentDate.getMonth(), currentDate.getFullYear());
+        });
+
+        // Form submission
+        document.getElementById('hallBookingForm').addEventListener('submit', function (e) {
+            e.preventDefault();
+
+            // Generate a random request ID
+            const requestId = 'HB-' + new Date().getFullYear() + '-' + String(Math.floor(Math.random() * 1000)).padStart(3, '0');
+            document.getElementById('modalRequestId').textContent = requestId;
+
+            // Hide booking modal and show success modal
+            const bookingModal = bootstrap.Modal.getInstance(document.getElementById('bookingModal'));
+            bookingModal.hide();
+
+            setTimeout(() => {
+                const successModal = new bootstrap.Modal(document.getElementById('successModal'));
+                successModal.show();
+            }, 300);
+
+            // Reset form
+            this.reset();
+        });
+
+        // Set minimum date for booking form
+        const today = new Date().toISOString().split('T')[0];
+        document.getElementById('eventDate').setAttribute('min', today);
+
+        // Initialize calendars on page load
+        generateMiniCalendar();
+        generateMainCalendar();
+
+    </script>
+</body>
+
+</html>
