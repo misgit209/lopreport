@@ -63,64 +63,8 @@ document.addEventListener('DOMContentLoaded', function () {
     setMinTime(); // Initialize
 });
 
-// Update the form submission handler
-hallBookingForm.addEventListener('submit', function (e) {
-    e.preventDefault();
-
-    // Collect form data
-    const formData = {
-        requesterName: document.getElementById('requesterName').value,
-        department: document.getElementById('department').value,
-        requesterEmail: document.getElementById('requesterEmail').value,
-        requesterPhone: document.getElementById('requesterPhone').value,
-        hallName: document.getElementById('hallName').value,
-        meetingWith: document.getElementById('meetingWith').value,
-        eventDate: document.getElementById('eventDate').value,
-        startTime: document.getElementById('startTime').value,
-        endTime: document.getElementById('endTime').value,
-        expectedAttendees: document.getElementById('expectedAttendees').value,
-        purpose: document.getElementById('purpose').value
-    };
-
-    // Validate required fields
-    if (!formData.meetingWith) {
-        alert('Please enter who you are meeting with');
-        return;
-    }
-
-    // Send data to server
-    fetch('/request/submit_booking', {
-        method: 'POST',
-        headers: {
-            'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(formData)
-    })
-        .then(response => response.json())
-        .then(data => {
-            if (data.success) {
-                // Show success modal
-                document.getElementById('modalRequestId').textContent = data.request_id;
-                const successModal = new bootstrap.Modal(document.getElementById('successModal'));
-                successModal.show();
-
-                // Hide booking modal
-                const bookingModal = bootstrap.Modal.getInstance(document.getElementById('bookingModal'));
-                bookingModal.hide();
-
-                // Reset form
-                hallBookingForm.reset();
-            } else {
-                alert('Error submitting booking: ' + data.message);
-            }
-        })
-        .catch(error => {
-            console.error('Error:', error);
-            alert('An error occurred while submitting the booking');
-        });
-});
-
 // Reset form when modal is closed
 document.getElementById('bookingModal').addEventListener('hidden.bs.modal', function () {
     document.getElementById('hallBookingForm').reset();
 });
+

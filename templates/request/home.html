@@ -9,572 +9,42 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <link href="https://unpkg.com/aos@2.3.1/dist/aos.css" rel="stylesheet">
     <link rel="stylesheet" href="/static/css/request/home.css">
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
     <style>
-        :root {
-            --primary: #28623A;
-            --primary-dark: #1D4A2A;
-            --primary-light: rgba(40, 98, 58, 0.1);
-            --primary-accent: #0F2027;
-            --secondary: #203A43;
-            --danger: #c13640;
-            --warning: #dfb4a5;
-            --light: #f8f9fa;
-            --text-light: #f5f5f5;
-            --text-muted: #6c757d;
-            --border-light: rgba(0, 0, 0, 0.1);
-            --shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.1);
-            --shadow-md: 0 4px 6px rgba(0, 0, 0, 0.1);
-            --shadow-lg: 0 10px 15px rgba(0, 0, 0, 0.1);
-            --transition: all 0.3s ease;
-            --max-width: 1200px;
+        /* Additional styling for the new checkbox */
+        .form-check-input:checked {
+            background-color: #28623A;
+            border-color: #28623A;
         }
 
-        /* Light Theme (default) */
-        :root {
-            --bg-color: #ffffff;
-            --text-color: #212529;
-            --card-bg: #f8f9fa;
-            --navbar-bg: var(--primary);
-            --sidebar-bg: #ffffff;
-            --border-color: #dee2e6;
-            --input-bg: #ffffff;
-            --modal-bg: #ffffff;
+        /* Pending stats card clickable style */
+        .pending-stats-card {
+            cursor: pointer;
+            transition: transform 0.2s;
         }
 
-        /* Dark Theme */
-        .dark-mode {
-            --bg-color: #212529;
-            --text-color: #f8f9fa;
-            --card-bg: #343a40;
-            --navbar-bg: var(--primary-dark);
-            --sidebar-bg: #343a40;
-            --border-color: #495057;
-            --input-bg: #343a40;
-            --modal-bg: #343a40;
-            --text-muted: #adb5bd;
-            --border-light: rgba(255, 255, 255, 0.1);
-        }
-
-        body {
-            background-color: var(--bg-color);
-            color: var(--text-color);
-            transition: var(--transition);
-            min-height: 100vh;
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-        }
-
-        .container {
-            max-width: var(--max-width);
-            padding: 0 20px;
-        }
-
-        .navbar {
-            background-color: var(--navbar-bg) !important;
-            box-shadow: var(--shadow-md);
-        }
-
-        .navbar-brand {
-            font-weight: 600;
-            color: var(--text-light) !important;
-        }
-
-        .navbar-brand i {
-            margin-right: 8px;
-        }
-
-        .nav-link {
-            color: rgba(255, 255, 255, 0.8) !important;
-            transition: var(--transition);
-        }
-
-        .nav-link:hover {
-            color: white !important;
-        }
-
-        .nav-link.active {
-            color: white !important;
-            font-weight: 500;
-        }
-
-        .main-container {
-            padding: 20px 0;
-            margin-top: 20px;
-        }
-
-        .dashboard-card {
-            background-color: var(--card-bg);
-            border-radius: 10px;
-            padding: 20px;
-            margin-bottom: 20px;
-            box-shadow: var(--shadow-sm);
-            transition: var(--transition);
-            border: 1px solid var(--border-color);
-        }
-
-        .dashboard-card:hover {
-            box-shadow: var(--shadow-md);
+        .pending-stats-card:hover {
             transform: translateY(-3px);
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
         }
 
-        .card-title {
-            font-weight: 600;
-            margin-bottom: 15px;
-            display: flex;
-            align-items: center;
-            gap: 8px;
-            color: var(--text-color);
+        /* Pending requests modal styles */
+        .pending-request-item {
+            border-left: 4px solid #398342;
+            transition: all 0.2s;
         }
 
-        .request-list {
-            display: flex;
-            flex-direction: column;
-            gap: 12px;
+        .pending-request-item:hover {
+            background-color: #f8f9fa;
         }
 
-        .request-item {
-            background-color: var(--primary-light);
-            padding: 15px;
-            border-radius: 8px;
-            border-left: 4px solid var(--primary);
-            transition: var(--transition);
+        .cancel-btn {
+            opacity: 0.8;
+            transition: opacity 0.2s;
         }
 
-        .request-item:hover {
-            background-color: rgba(40, 98, 58, 0.2);
-        }
-
-        .request-title {
-            font-weight: 600;
-            color: var(--text-color);
-        }
-
-        .request-meta {
-            display: flex;
-            flex-wrap: wrap;
-            gap: 15px;
-            font-size: 0.9rem;
-            color: var(--text-muted);
-        }
-
-        .request-meta-item {
-            display: flex;
-            align-items: center;
-            gap: 5px;
-        }
-
-        .badge-approved {
-            background-color: var(--primary);
-            color: white;
-        }
-
-        .badge-pending {
-            background-color: var(--warning);
-            color: var(--text-color);
-        }
-
-        .badge-rejected {
-            background-color: var(--danger);
-            color: white;
-        }
-
-        .activity-timeline {
-            display: flex;
-            flex-direction: column;
-            gap: 15px;
-        }
-
-        .activity-item {
-            position: relative;
-            padding-left: 20px;
-        }
-
-        .activity-item::before {
-            content: "";
-            position: absolute;
-            left: 0;
-            top: 0;
-            bottom: 0;
-            width: 2px;
-            background-color: var(--primary);
-        }
-
-        .activity-content h6 {
-            font-weight: 600;
-            margin-bottom: 5px;
-            color: var(--text-color);
-        }
-
-        .activity-content p {
-            margin-bottom: 5px;
-            font-size: 0.9rem;
-            color: var(--text-muted);
-        }
-
-        .activity-content span {
-            font-size: 0.8rem;
-            color: var(--text-muted);
-        }
-
-        .fab {
-            position: fixed;
-            bottom: 30px;
-            right: 30px;
-            width: 60px;
-            height: 60px;
-            border-radius: 50%;
-            background: var(--primary);
-            color: white;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-size: 24px;
-            box-shadow: var(--shadow-lg);
-            cursor: pointer;
-            z-index: 1000;
-            transition: var(--transition);
-        }
-
-        .fab:hover {
-            transform: scale(1.1);
-            background: var(--primary-dark);
-        }
-
-        .dark-mode-toggle {
-            width: 40px;
-            height: 20px;
-            background-color: var(--primary);
-            border-radius: 20px;
-            position: relative;
-            cursor: pointer;
-            transition: var(--transition);
-        }
-
-        .dark-mode-toggle::before {
-            content: "";
-            position: absolute;
-            width: 16px;
-            height: 16px;
-            border-radius: 50%;
-            background-color: white;
-            top: 2px;
-            left: 2px;
-            transition: var(--transition);
-        }
-
-        .dark-mode-toggle.active {
-            background-color: var(--secondary);
-        }
-
-        .dark-mode-toggle.active::before {
-            left: 22px;
-        }
-
-        .user-avatar {
-            width: 32px;
-            height: 32px;
-            border-radius: 50%;
-            object-fit: cover;
-        }
-
-        .modal-content {
-            background-color: var(--modal-bg);
-            color: var(--text-color);
-            border: none;
-            box-shadow: var(--shadow-lg);
-        }
-
-        .modal-header {
-            border-bottom: 1px solid var(--border-color);
-            background: var(--primary);
-            color: white;
-        }
-
-        .btn-close {
-            filter: invert(1);
-        }
-
-        .form-control,
-        .form-select {
-            background-color: var(--input-bg);
-            color: var(--text-color);
-            border: 1px solid var(--border-color);
-            transition: var(--transition);
-        }
-
-        .form-control:focus,
-        .form-select:focus {
-            border-color: var(--primary);
-            box-shadow: 0 0 0 0.25rem rgba(40, 98, 58, 0.25);
-        }
-
-        .required-field::after {
-            content: " *";
-            color: var(--danger);
-        }
-
-        .btn-primary {
-            background-color: var(--primary);
-            border-color: var(--primary);
-        }
-
-        .btn-primary:hover {
-            background-color: var(--primary-dark);
-            border-color: var(--primary-dark);
-        }
-
-        .btn-outline-secondary {
-            border-color: var(--border-color);
-            color: var(--text-color);
-        }
-
-        .btn-outline-secondary:hover {
-            background-color: var(--border-color);
-            color: var(--text-color);
-        }
-
-        .stats-number {
-            font-size: 2rem;
-            font-weight: 700;
-            color: var(--primary);
-        }
-
-        /* Responsive adjustments */
-        @media (max-width: 768px) {
-            .main-container {
-                padding: 15px 0;
-            }
-
-            .dashboard-card {
-                padding: 15px;
-            }
-
-            .request-meta {
-                flex-direction: column;
-                gap: 8px;
-            }
-
-            .stats-number {
-                font-size: 1.5rem;
-            }
-        }
-
-        /* Calendar Styles */
-        .calendar-container {
-            min-height: 500px;
-            background-color: var(--card-bg);
-            border-radius: 10px;
-            padding: 20px;
-            box-shadow: var(--shadow-sm);
-            border: 1px solid var(--border-color);
-        }
-
-        .calendar-header {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            margin-bottom: 20px;
-        }
-
-        .calendar-month-year {
-            font-size: 1.5rem;
-            font-weight: 600;
-            color: var(--text-color);
-        }
-
-        .calendar-grid {
-            display: grid;
-            grid-template-columns: repeat(7, 1fr);
-            gap: 1px;
-            background: var(--border-light);
-            border-radius: 8px;
-            overflow: hidden;
-        }
-
-        .calendar-day-header {
-            background-color: var(--primary);
-            color: white;
-            font-weight: 500;
-            padding: 15px 10px;
-            text-align: center;
-            font-size: 0.875rem;
-        }
-
-        .calendar-day {
-            height: 100px;
-            padding: 8px;
-            border: 1px solid var(--border-light);
-            overflow-y: auto;
-            background-color: var(--bg-color);
-            cursor: pointer;
-            transition: var(--transition);
-            position: relative;
-        }
-
-        .calendar-day:hover {
-            background-color: var(--primary-light);
-        }
-
-        .calendar-day.other-month {
-            background: var(--card-bg);
-            color: var(--text-muted);
-        }
-
-        .calendar-day.today {
-            background-color: var(--primary-light);
-            border: 2px solid var(--primary);
-        }
-
-        .calendar-day.has-booking {
-            background-color: rgba(40, 98, 58, 0.1);
-        }
-
-        .calendar-day.has-booking::after {
-            content: '';
-            position: absolute;
-            top: 5px;
-            right: 5px;
-            width: 8px;
-            height: 8px;
-            background: var(--primary);
-            border-radius: 50%;
-        }
-
-        .day-number {
-            font-weight: 600;
-            font-size: 0.875rem;
-            margin-bottom: 5px;
-            color: var(--text-color);
-        }
-
-        .calendar-day.other-month .day-number {
-            color: var(--text-muted);
-        }
-
-        .day-bookings {
-            font-size: 0.75rem;
-            color: var(--primary);
-            font-weight: 500;
-        }
-
-        .calendar-event {
-            font-size: 0.7rem;
-            padding: 2px 4px;
-            margin-bottom: 2px;
-            border-radius: 3px;
-            background-color: var(--primary);
-            color: white;
-            white-space: nowrap;
-            overflow: hidden;
-            text-overflow: ellipsis;
-        }
-
-        /* Responsive adjustments */
-        @media (max-width: 768px) {
-            .calendar-day {
-                height: 80px;
-                padding: 5px;
-            }
-
-            .day-number {
-                font-size: 0.75rem;
-            }
-
-            .calendar-month-year {
-                font-size: 1.25rem;
-            }
-
-            .calendar-day-header {
-                padding: 10px 5px;
-            }
-        }
-
-        /*  Mini Calendar Styles */
-        .mini-calendar-container {
-            width: 100%;
-            padding: 5px;
-            height: 300px;
-            /* total calendar height */
-            display: flex;
-            flex-direction: column;
-        }
-
-        #miniCalendar {
-            flex: 1;
-            display: flex;
-            flex-direction: column;
-        }
-
-        #miniCalendar .calendar-header {
-            margin-bottom: 8px;
-        }
-
-        #miniCalendar .calendar-month-year {
-            font-size: 0.95rem;
-        }
-
-        #miniCalendar .mini-calendar-grid {
-            display: grid;
-            grid-template-columns: repeat(7, 1fr);
-            grid-auto-rows: 1fr;
-            /* each row takes equal height */
-            gap: 1px;
-            flex: 1;
-            text-align: center;
-        }
-
-        #miniCalendar .mini-day-header {
-            font-size: 14px;
-            font-weight: 500;
-            color: var(--text-muted);
-            padding: 2px 1px;
-        }
-
-        #miniCalendar .mini-calendar-day {
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-size: 14px;
-            border-radius: 3px;
-            cursor: pointer;
-            transition: var(--transition);
-            position: relative;
-        }
-
-        #miniCalendar .mini-calendar-day:hover {
-            background-color: var(--primary-light);
-        }
-
-        #miniCalendar .mini-calendar-day.today {
-            background-color: var(--primary);
-            color: white;
-            font-weight: 600;
-        }
-
-        #miniCalendar .mini-calendar-day.other-month {
-            color: var(--text-muted);
-            opacity: 0.5;
-        }
-
-        #miniCalendar .mini-calendar-day.has-booking::after {
-            content: '';
-            position: absolute;
-            bottom: 3px;
-            right: 3px;
-            width: 4px;
-            height: 4px;
-            background: red;
-            border-radius: 50%;
-        }
-
-        #miniCalendar .mini-calendar-day.today.has-booking::after {
-            background: white;
-        }
-
-        /* Responsive */
-        @media (max-width: 768px) {
-            #miniCalendar .mini-calendar-day {
-                font-size: 0.6rem;
-            }
+        .cancel-btn:hover {
+            opacity: 1;
         }
     </style>
 </head>
@@ -584,8 +54,8 @@
     <nav class="navbar navbar-expand-lg navbar-dark">
         <div class="container">
             <a class="navbar-brand" href="#">
-                <i class="fas fa-calendar-alt"></i>
-                <span class="d-none d-sm-inline">Hall Booking</span>
+                <!-- <img src="/static/svgs/calendar-date.svg" alt="calendar icon" width="30" height="30"> -->
+                <span class="d-none d-sm-inline">Salzer Unit II</span>
             </a>
 
             <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarContent">
@@ -596,34 +66,32 @@
                 <ul class="navbar-nav me-auto mb-2 mb-lg-0">
                     <li class="nav-item">
                         <a class="nav-link active" href="#" id="dashboardNav">
-                            <i class="fas fa-home me-1"></i> Dashboard
+                            <img src="/static/svgs/home.svg" alt="home-icon" width="20" height="20" class="svg-icons">
+                            Dashboard
                         </a>
                     </li>
                     <li class="nav-item">
                         <a class="nav-link" href="#" id="calendarNav">
-                            <i class="fas fa-calendar me-1"></i> Calendar
+                            <img src="/static/svgs/nav-calendar.svg" alt="nav-calendar" width="20" height="20"
+                                class="svg-icons">
+                            Calendar
                         </a>
                     </li>
                 </ul>
 
                 <div class="d-flex align-items-center">
-                    <div class="form-check form-switch me-3">
-                        <input class="form-check-input" type="checkbox" id="darkModeToggle">
-                        <label class="form-check-label" for="darkModeToggle">
-                            <i class="fas fa-moon"></i>
-                        </label>
-                    </div>
 
                     <div class="dropdown">
                         <a class="nav-link dropdown-toggle d-flex align-items-center" href="#" role="button"
                             data-bs-toggle="dropdown">
-                            <img src="https://ui-avatars.com/api/?name=John+Doe&background=random"
+                            <img src="https://ui-avatars.com/api/?name={{ session.user_name|default('User') }}&background=random"
                                 class="rounded-circle me-2" width="32" height="32">
-                            <span class="d-none d-md-inline">John Doe</span>
+                            <span class="d-none d-md-inline">{{ session.user_name|default('User') }}</span>
                         </a>
                         <ul class="dropdown-menu dropdown-menu-end">
-                            <li><a class="dropdown-item text-danger" href="#"><i
-                                        class="fas fa-sign-out-alt me-2"></i>Logout</a></li>
+                            <li><a class="dropdown-item text-danger" href="{{ url_for('request.logout') }}">
+                                    <i class="fas fa-sign-out-alt me-2"></i>Logout
+                                </a></li>
                         </ul>
                     </div>
                 </div>
@@ -658,7 +126,7 @@
                     </div>
                 </div>
                 <div class="col-md-3 col-6 mb-3">
-                    <div class="dashboard-card h-100">
+                    <div class="dashboard-card h-100 pending-stats-card" id="pendingStatsCard">
                         <div class="card-title">
                             <img src="/static/svgs/pending.svg" alt="pending icon" class="me-2" width="24" height="24">
                             <span>Pending</span>
@@ -670,7 +138,8 @@
                 <div class="col-md-3 col-6 mb-3">
                     <div class="dashboard-card h-100">
                         <div class="card-title">
-                            <img src="/static/svgs/rejected.svg" alt="rejected icon" class="me-2" width="24" height="24">
+                            <img src="/static/svgs/rejected.svg" alt="rejected icon" class="me-2" width="24"
+                                height="24">
                             <span>Rejected</span>
                         </div>
                         <div class="stats-number">{{ rejected_count }}</div>
@@ -696,10 +165,10 @@
                     <div class="dashboard-card mb-4">
                         <div class="d-flex justify-content-between align-items-center mb-3">
                             <h5 class="card-title mb-0">
-                                <i class="fas fa-calendar-week me-2"></i>
+                                <img src="/static/svgs/upcoming.svg" alt="upcoming icon" class="me-2" width="24"
+                                    height="24">
                                 <span>Upcoming Bookings</span>
                             </h5>
-                            <a href="#" class="small">View All</a>
                         </div>
 
                         <div class="request-list">
@@ -735,8 +204,9 @@
                     <div class="dashboard-card">
                         <div class="d-flex justify-content-between align-items-center mb-3">
                             <h5 class="card-title mb-0">
-                                <i class="fas fa-calendar-alt me-2"></i>
-                                <span>Calendar Overview</span>
+                                <img src="/static/svgs/nav-calendar.svg" alt="calendar icon" class="me-2" width="24"
+                                    height="24">
+                                <span>Your Calendar Overview</span>
                             </h5>
                             <a href="#" id="viewFullCalendar" class="small">View Full Calendar</a>
                         </div>
@@ -751,10 +221,10 @@
                     <div class="dashboard-card mb-4">
                         <div class="d-flex justify-content-between align-items-center mb-3">
                             <h5 class="card-title mb-0">
-                                <i class="fas fa-history me-2"></i>
+                                <img src="/static/svgs/recent.svg" alt="recent icon" class="me-2" width="24"
+                                    height="24">
                                 <span>Recent Activity</span>
                             </h5>
-                            <a href="#" class="small">View All</a>
                         </div>
 
                         <div class="activity-timeline">
@@ -824,12 +294,26 @@
     <div class="modal fade" id="bookingModal" tabindex="-1" aria-hidden="true">
         <div class="modal-dialog modal-lg">
             <div class="modal-content">
-                <div class="modal-header bg-primary text-white">
-                    <h5 class="modal-title"><i class="fas fa-calendar-plus me-2"></i>New Hall Booking Request</h5>
+                <div class="modal-header text-white" style="background-color: #28623A;">
+                    <h5 class="modal-title"><img src="/static/svgs/new.svg" alt="new-booking" width="25" height="25"
+                            class="svg-icons"> New Hall Booking Request</h5>
                     <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"
                         aria-label="Close"></button>
                 </div>
                 <div class="modal-body">
+                    <!-- New Internal/Internal Checkbox -->
+                    <div class="row mb-3">
+                        <div class="col-md-6 mb-3">
+                            <div class="form-check form-switch">
+                                <input class="form-check-input" type="checkbox" id="isInternal" value="Internal"
+                                    name="isInternal">
+                                <label class="form-check-label" for="isInternal">
+                                    Internal Meeting
+                                </label>
+                            </div>
+                            <small class="form-text text-muted">Check if this is an internal meeting.</small>
+                        </div>
+                    </div>
                     <form id="hallBookingForm">
                         <div class="row mb-3">
                             <div class="col-md-6 mb-3">
@@ -861,10 +345,11 @@
                                 <label for="hallName" class="form-label required-field">Hall Name</label>
                                 <select class="form-select" id="hallName" name="hallName" required>
                                     <option value="" selected disabled>Select Hall</option>
+                                    <option value="Discussion Room 1 (Reception)">Discussion Room 1 (Reception)</option>
+                                    <option value="Discussion Room 1">Discussion Room 1</option>
+                                    <option value="Discussion Room 2">Discussion Room 2</option>
                                     <option value="Conference Room 1">Conference Room 1</option>
                                     <option value="Conference Room 2">Conference Room 2</option>
-                                    <option value="Conference Room 3">Conference Room 3</option>
-                                    <option value="Conference Room 4">Conference Room 4</option>
                                 </select>
                             </div>
                             <div class="col-md-6 mb-3">
@@ -897,6 +382,7 @@
                             </div>
                         </div>
 
+
                         <div class="mb-3">
                             <label for="purpose" class="form-label required-field">Purpose of Booking</label>
                             <textarea class="form-control" id="purpose" rows="3" name="purpose" required></textarea>
@@ -911,6 +397,32 @@
                             </button>
                         </div>
                     </form>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Pending Requests Modal -->
+    <div class="modal fade" id="pendingRequestsModal" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog modal-lg">
+            <div class="modal-content">
+                <div class="modal-header text-white" style="background-color: #195729;">
+                    <h5 class="modal-title"><i class="fas fa-clock me-2"></i>Pending Booking Requests</h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"
+                        aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <div id="pendingRequestsList">
+                        <div class="text-center py-4">
+                            <div class="spinner-border text-warning" role="status">
+                                <span class="visually-hidden">Loading...</span>
+                            </div>
+                            <p class="mt-2">Loading pending requests...</p>
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
                 </div>
             </div>
         </div>
@@ -940,21 +452,25 @@
     <script src="https://unpkg.com/aos@2.3.1/dist/aos.js"></script>
     <script src="/static/js/request/script.js"></script>
     <script>
-        // Initialize AOS animations
-        AOS.init();
-
-        // Dark mode toggle
-        const darkModeToggle = document.getElementById('darkModeToggle');
-        darkModeToggle.addEventListener('change', function () {
-            document.body.classList.toggle('dark-mode');
-            localStorage.setItem('darkMode', this.checked);
+        // Show calendar reminder popup if flag is set
+        document.addEventListener('DOMContentLoaded', function () {
+            {% if session.get('show_calendar_reminder') %}
+            Swal.fire({
+                title: 'Important Reminder',
+                html: 'Please check the calendar before booking a slot to avoid conflicts.',
+                icon: 'info',
+                confirmButtonText: 'Got it!',
+                allowOutsideClick: false,
+                backdrop: true
+            }).then(() => {
+                // Clear the flag so it doesn't show again
+                fetch('/clear_calendar_reminder', { method: 'POST' });
+            });
+            {% endif %}
         });
 
-        // Check for saved dark mode preference
-        if (localStorage.getItem('darkMode') === 'true') {
-            darkModeToggle.checked = true;
-            document.body.classList.add('dark-mode');
-        }
+        // Initialize AOS animations
+        AOS.init();
 
         // Navigation functionality
         const dashboardNav = document.getElementById('dashboardNav');
@@ -976,7 +492,7 @@
             calendarSection.classList.remove('d-none');
             dashboardNav.classList.remove('active');
             calendarNav.classList.add('active');
-            generateMainCalendar();
+            fetchBookings();
         }
 
         dashboardNav.addEventListener('click', (e) => {
@@ -1005,27 +521,82 @@
             'July', 'August', 'September', 'October', 'November', 'December'];
         const dayNames = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
 
-        // Sample booking data
-        const bookings = {
-            '2025-08-15': [
-                { title: 'Team Meeting', room: 'Conference Room 1', time: '2:00 PM - 4:00 PM' }
-            ],
-            '2025-08-16': [
-                { title: 'Client Presentation', room: 'Conference Room 2', time: '10:00 AM - 12:00 PM' },
-                { title: 'Training Session', room: 'Conference Room 3', time: '3:00 PM - 5:00 PM' }
-            ],
-            '2025-08-20': [
-                { title: 'Board Meeting', room: 'Conference Room 1', time: '9:00 AM - 11:00 AM' }
-            ],
-            '2025-08-25': [
-                { title: 'Workshop', room: 'Conference Room 4', time: '1:00 PM - 4:00 PM' }
-            ]
-        };
+        // Fetch bookings from API
+        function fetchBookings(month = currentDate.getMonth(), year = currentDate.getFullYear()) {
+            fetch('/request/api/bookings')
+                .then(response => {
+                    if (!response.ok) throw new Error('Network response was not ok');
+                    return response.json();
+                })
+                .then(data => {
+                    if (data.error) throw new Error(data.error);
 
-        // Generate Main Calendar (Full Calendar View)
-        function generateMainCalendar(month = currentDate.getMonth(), year = currentDate.getFullYear()) {
-            currentDate.setMonth(month);
-            currentDate.setFullYear(year);
+                    // Render main calendar with all bookings
+                    renderCalendar(month, year, data.all);
+
+                    // Render mini calendar with user's bookings
+                    generateMiniCalendar(month, year, data.user);
+                })
+                .catch(error => {
+                    console.error('Error fetching bookings:', error);
+                    const calendarGrid = document.getElementById('calendarGrid');
+                    calendarGrid.innerHTML = `
+                <div class="col-12 text-center py-5">
+                    <i class="fas fa-exclamation-triangle fa-2x text-danger mb-3"></i>
+                    <p class="text-danger">Error loading bookings: ${error.message}</p>
+                    <button class="btn btn-sm btn-primary" onclick="fetchBookings()">
+                        <i class="fas fa-sync-alt me-1"></i> Retry
+                    </button>
+                </div>
+            `;
+                });
+        }
+
+
+        // Calendar navigation
+        document.getElementById('prevMonth').addEventListener('click', () => {
+            currentDate.setMonth(currentDate.getMonth() - 1);
+            fetchBookings(currentDate.getMonth(), currentDate.getFullYear());
+        });
+
+        document.getElementById('nextMonth').addEventListener('click', () => {
+            currentDate.setMonth(currentDate.getMonth() + 1);
+            fetchBookings(currentDate.getMonth(), currentDate.getFullYear());
+        });
+
+        document.getElementById('todayBtn').addEventListener('click', () => {
+            currentDate = new Date();
+            fetchBookings(currentDate.getMonth(), currentDate.getFullYear());
+        });
+
+        // Render calendar with bookings
+        function renderCalendar(month, year, bookingsData) {
+            currentDate = new Date(year, month, 1);
+
+            // Process bookings data into a more usable format
+            const bookings = {};
+            const today = new Date();
+            today.setHours(0, 0, 0, 0);
+
+            bookingsData.forEach(booking => {
+                const bookingDate = new Date(booking.EventDate);
+                if (bookingDate >= today) {
+                    const dateKey = booking.EventDate;
+
+                    if (!bookings[dateKey]) {
+                        bookings[dateKey] = [];
+                    }
+
+                    bookings[dateKey].push({
+                        title: `${booking.RequesterName} - ${booking.HallName}`,
+                        room: booking.HallName,
+                        time: `${formatTime(booking.StartTime)} - ${formatTime(booking.EndTime)}`,
+                        requester: booking.RequesterName,
+                        startTime: formatTime(booking.StartTime),
+                        endTime: formatTime(booking.EndTime)
+                    });
+                }
+            });
 
             // Update month/year display
             document.getElementById('monthYear').textContent = `${monthNames[month]} ${year}`;
@@ -1053,42 +624,50 @@
 
             // Add previous month's trailing days
             for (let i = startingDayOfWeek - 1; i >= 0; i--) {
-                const dayElement = createMainCalendarDay(
+                const dayElement = createCalendarDay(
                     daysInPrevMonth - i,
                     true,
                     year,
-                    month - 1
+                    month - 1,
+                    bookings
                 );
                 calendarGrid.appendChild(dayElement);
             }
 
             // Add current month's days
             for (let day = 1; day <= daysInMonth; day++) {
-                const dayElement = createMainCalendarDay(day, false, year, month);
+                const dayElement = createCalendarDay(day, false, year, month, bookings);
                 calendarGrid.appendChild(dayElement);
             }
 
             // Add next month's leading days
-            const totalCells = calendarGrid.children.length - 7; // Subtract day headers
-            const remainingCells = 42 - totalCells; // 6 rows × 7 days
+            const totalCells = calendarGrid.children.length - 7;
+            const remainingCells = 42 - totalCells;
             for (let day = 1; day <= remainingCells; day++) {
-                const dayElement = createMainCalendarDay(
+                const dayElement = createCalendarDay(
                     day,
                     true,
                     year,
-                    month + 1
+                    month + 1,
+                    bookings
                 );
                 calendarGrid.appendChild(dayElement);
             }
         }
 
-        function createMainCalendarDay(day, isOtherMonth, year, month) {
+        function createCalendarDay(day, isOtherMonth, year, month, bookings) {
             const dayElement = document.createElement('div');
             dayElement.className = 'calendar-day';
 
             if (isOtherMonth) {
                 dayElement.classList.add('other-month');
             }
+
+            // Create day number
+            const dayNumber = document.createElement('div');
+            dayNumber.className = 'day-number';
+            dayNumber.textContent = day;
+            dayElement.appendChild(dayNumber);
 
             // Check if it's today
             const today = new Date();
@@ -1100,27 +679,39 @@
                 dayElement.classList.add('today');
             }
 
-            // Create day number
-            const dayNumber = document.createElement('div');
-            dayNumber.className = 'day-number';
-            dayNumber.textContent = day;
-            dayElement.appendChild(dayNumber);
-
             // Check for bookings
             const dateString = `${year}-${String(month + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
             if (bookings[dateString] && !isOtherMonth) {
                 dayElement.classList.add('has-booking');
 
                 // Add booking events
-                bookings[dateString].forEach(booking => {
+                const visibleBookings = bookings[dateString].slice(0, 2);
+                const extraBookingsCount = bookings[dateString].length - 2;
+
+                visibleBookings.forEach(booking => {
                     const eventElement = document.createElement('div');
                     eventElement.className = 'calendar-event';
-                    eventElement.textContent = booking.title;
-                    eventElement.title = `${booking.title} - ${booking.room} (${booking.time})`;
+                    eventElement.innerHTML = `
+                <small class="d-block text-truncate">${booking.requester}</small>
+                <small class="d-block text-truncate">${booking.startTime} - ${booking.endTime}</small>
+            `;
+                    eventElement.setAttribute('data-bs-toggle', 'tooltip');
+                    eventElement.setAttribute('title',
+                        `${booking.requester}\n${booking.room}\n${booking.time}`);
                     dayElement.appendChild(eventElement);
                 });
 
-                // Add click event
+                if (extraBookingsCount > 0) {
+                    const moreEventsElement = document.createElement('div');
+                    moreEventsElement.className = 'calendar-event-more';
+                    moreEventsElement.textContent = `+${extraBookingsCount} more`;
+                    moreEventsElement.setAttribute('data-bs-toggle', 'tooltip');
+                    moreEventsElement.setAttribute('title',
+                        bookings[dateString].slice(2).map(b => `${b.requester} (${b.time})`).join('\n'));
+                    dayElement.appendChild(moreEventsElement);
+                }
+
+                // Add click event to show all bookings
                 dayElement.addEventListener('click', () => {
                     showBookingDetails(dateString, bookings[dateString]);
                 });
@@ -1129,28 +720,350 @@
             return dayElement;
         }
 
-        // Generate Mini Calendar (Dashboard Widget)
-        function generateMiniCalendar(month = currentDate.getMonth(), year = currentDate.getFullYear()) {
+        // Helper function to format time as HH:MM
+        function formatTime(timeString) {
+            if (!timeString) return '';
+            return timeString.split(':').slice(0, 2).join(':');
+        }
+
+        function showBookingDetails(date, bookingList) {
+            const formattedDate = new Date(date).toLocaleDateString('en-US', {
+                weekday: 'long',
+                year: 'numeric',
+                month: 'long',
+                day: 'numeric'
+            });
+
+            let bookingDetails = `<div class="booking-details-container"><h5>Bookings for ${formattedDate}</h5>`;
+            bookingList.forEach((booking, index) => {
+                bookingDetails += `
+                <div class="booking-item mb-3 p-2 border rounded">
+                    <div class="d-flex justify-content-between">
+                        <strong>${index + 1}. ${booking.requester}</strong>
+                        <span class="badge bg-primary">${booking.room}</span>
+                    </div>
+                    <div class="text-muted">${booking.time}</div>
+                </div>`;
+            });
+            bookingDetails += `</div>`;
+
+            const modalElement = document.createElement('div');
+            modalElement.className = 'modal fade';
+            modalElement.tabIndex = -1;
+            modalElement.innerHTML = `
+                <div class="modal-dialog modal-dialog-centered">
+                    <div class="modal-content">
+                        <div class="modal-header text-white" style="background-color: #28623A;">
+                            <h5 class="modal-title">
+                                <i class="fas fa-calendar-alt me-2"></i>Booking Details
+                            </h5>
+                            <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+                        </div>
+                        <div class="modal-body">
+                            ${bookingDetails}
+                        </div>
+                        <div class="modal-footer">
+                            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                        </div>
+                    </div>
+                </div>
+                `;
+
+            document.body.appendChild(modalElement);
+            const modal = new bootstrap.Modal(modalElement);
+            modal.show();
+
+            modalElement.addEventListener('hidden.bs.modal', function () {
+                document.body.removeChild(modalElement);
+            });
+        }
+        // Form submission
+        document.getElementById('hallBookingForm').addEventListener('submit', async function (e) {
+            e.preventDefault();
+
+            // Collect form data
+            const formData = {
+                requesterName: document.getElementById('requesterName').value,
+                department: document.getElementById('department').value,
+                requesterEmail: document.getElementById('requesterEmail').value,
+                requesterPhone: document.getElementById('requesterPhone').value,
+                hallName: document.getElementById('hallName').value,
+                meetingWith: document.getElementById('meetingWith').value,
+                eventDate: document.getElementById('eventDate').value,
+                startTime: document.getElementById('startTime').value,
+                endTime: document.getElementById('endTime').value,
+                expectedAttendees: document.getElementById('expectedAttendees').value,
+                purpose: document.getElementById('purpose').value,
+                isInternal: document.getElementById('isInternal').checked
+            };
+
+            // Basic validation
+            if (formData.startTime >= formData.endTime) {
+                Swal.fire({
+                    icon: 'error',
+                    title: 'Invalid Time',
+                    text: 'End time must be after start time',
+                    confirmButtonText: 'OK'
+                });
+                return;
+            }
+
+            try {
+                const response = await fetch('/request/submit_booking', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify(formData)
+                });
+
+                const data = await response.json();
+
+                if (data.success) {
+                    // Show success modal with actual database ID
+                    document.getElementById('modalRequestId').textContent = data.request_id;
+                    const successModal = new bootstrap.Modal(document.getElementById('successModal'));
+
+                    // Add event listener for when modal is closed
+                    document.getElementById('successModal').addEventListener('hidden.bs.modal', function () {
+                        location.reload(); // Refresh the page when modal is closed
+                    });
+
+                    successModal.show();
+
+                    // Hide booking modal
+                    const bookingModal = bootstrap.Modal.getInstance(document.getElementById('bookingModal'));
+                    bookingModal.hide();
+
+                    // Reset form
+                    document.getElementById('hallBookingForm').reset();
+                } else {
+                    Swal.fire({
+                        icon: 'error',
+                        title: 'Booking Failed',
+                        text: data.message || 'Error submitting booking',
+                        confirmButtonText: 'OK'
+                    });
+                }
+            } catch (error) {
+                console.error('Error:', error);
+                Swal.fire({
+                    icon: 'error',
+                    title: 'Error',
+                    text: 'An error occurred while submitting the booking',
+                    confirmButtonText: 'OK'
+                });
+            }
+        });
+
+        // Helper function to format date for display
+        function formatDisplayDate(dateString) {
+            const options = { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' };
+            return new Date(dateString).toLocaleDateString('en-US', options);
+        }
+
+        // Set minimum date for booking form
+        document.getElementById('eventDate').setAttribute('min', new Date().toISOString().split('T')[0]);
+
+        // Initialize tooltips
+        function initializeTooltips() {
+            const tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'));
+            tooltipTriggerList.map(function (tooltipTriggerEl) {
+                return new bootstrap.Tooltip(tooltipTriggerEl);
+            });
+        }
+
+        // Pending requests functionality
+        const pendingStatsCard = document.getElementById('pendingStatsCard');
+        const pendingRequestsModal = new bootstrap.Modal(document.getElementById('pendingRequestsModal'));
+
+        // Click event for pending stats card
+        pendingStatsCard.addEventListener('click', function () {
+            loadPendingRequests();
+            pendingRequestsModal.show();
+        });
+
+        // Function to load pending requests
+        function loadPendingRequests() {
+            const pendingRequestsList = document.getElementById('pendingRequestsList');
+            pendingRequestsList.innerHTML = `
+                <div class="text-center py-4">
+                    <div class="spinner-border text-warning" role="status">
+                        <span class="visually-hidden">Loading...</span>
+                    </div>
+                    <p class="mt-2">Loading pending requests...</p>
+                </div>
+            `;
+
+            fetch('/request/api/pending-requests')
+                .then(response => {
+                    if (!response.ok) {
+                        throw new Error('Failed to fetch pending requests');
+                    }
+                    return response.json();
+                })
+                .then(data => {
+                    if (data.error) {
+                        throw new Error(data.error);
+                    }
+
+                    if (data.requests && data.requests.length > 0) {
+                        let html = '';
+                        data.requests.forEach(request => {
+                            html += `
+                                <div class="pending-request-item p-3 mb-3 bg-light rounded">
+                                    <div class="d-flex justify-content-between align-items-start">
+                                        <div>
+                                            <h6 class="mb-1">${request.MeetingWith || 'No title'}</h6>
+                                            <p class="mb-1 small text-muted">
+                                                <i class="fas fa-building me-1"></i> ${request.HallName}
+                                            </p>
+                                            <p class="mb-1 small text-muted">
+                                                <i class="fas fa-calendar me-1"></i> ${request.EventDate} 
+                                                <i class="fas fa-clock ms-2 me-1"></i> ${formatTime(request.StartTime)} - ${formatTime(request.EndTime)}
+                                            </p>
+                                            <p class="mb-0 small text-muted">
+                                                <i class="fas fa-user me-1"></i> Requested by: ${request.RequesterName}
+                                            </p>
+                                        </div>
+                                        <button class="btn btn-sm btn-outline-danger cancel-btn" 
+                                                data-request-id="${request.RequestID}" 
+                                                onclick="cancelRequest(${request.RequestID})">
+                                            <i class="fas fa-times me-1"></i> Cancel
+                                        </button>
+                                    </div>
+                                </div>
+                            `;
+                        });
+                        pendingRequestsList.innerHTML = html;
+                    } else {
+                        pendingRequestsList.innerHTML = `
+                            <div class="text-center py-5">
+                                <i class="fas fa-inbox fa-3x text-muted mb-3"></i>
+                                <p class="text-muted">No pending requests found</p>
+                            </div>
+                        `;
+                    }
+                })
+                .catch(error => {
+                    console.error('Error loading pending requests:', error);
+                    pendingRequestsList.innerHTML = `
+                        <div class="text-center py-5">
+                            <i class="fas fa-exclamation-triangle fa-2x text-danger mb-3"></i>
+                            <p class="text-danger">Error loading pending requests: ${error.message}</p>
+                            <button class="btn btn-sm btn-primary" onclick="loadPendingRequests()">
+                                <i class="fas fa-sync-alt me-1"></i> Try Again
+                            </button>
+                        </div>
+                    `;
+                });
+        }
+
+        // Function to cancel a request
+        function cancelRequest(requestId) {
+            Swal.fire({
+                title: 'Are you sure?',
+                text: "You won't be able to revert this!",
+                icon: 'warning',
+                showCancelButton: true,
+                confirmButtonColor: '#d33',
+                cancelButtonColor: '#6c757d',
+                confirmButtonText: 'Yes, cancel it!'
+            }).then((result) => {
+                if (result.isConfirmed) {
+                    fetch(`/request/api/cancel-request/${requestId}`, {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                        }
+                    })
+                        .then(response => response.json())
+                        .then(data => {
+                            if (data.success) {
+                                Swal.fire(
+                                    'Cancelled!',
+                                    'Your booking request has been cancelled.',
+                                    'success'
+                                ).then(() => {
+                                    // Reload the pending requests
+                                    loadPendingRequests();
+                                    // Refresh the dashboard
+                                    location.reload();
+                                });
+                            } else {
+                                Swal.fire(
+                                    'Error!',
+                                    data.message || 'Failed to cancel the request.',
+                                    'error'
+                                );
+                            }
+                        })
+                        .catch(error => {
+                            console.error('Error cancelling request:', error);
+                            Swal.fire(
+                                'Error!',
+                                'An error occurred while cancelling the request.',
+                                'error'
+                            );
+                        });
+                }
+            });
+        }
+
+        // Make cancelRequest function available globally
+        window.cancelRequest = cancelRequest;
+
+        // Initialize the page
+        document.addEventListener('DOMContentLoaded', function () {
+            initializeTooltips();
+            // Initialize with dashboard view
+            showDashboard();
+        });
+
+        // Mini Calendar Functions
+        let miniCalendarCurrentDate = new Date(); // Track mini calendar's current month separately
+
+        function generateMiniCalendar(month = miniCalendarCurrentDate.getMonth(), year = miniCalendarCurrentDate.getFullYear(), userBookings) {
             const miniCalendar = document.getElementById('miniCalendar');
             miniCalendar.innerHTML = '';
 
+            // Update the tracked date
+            miniCalendarCurrentDate = new Date(year, month, 1);
+
+            // Process user's bookings
+            const bookings = {};
+            const today = new Date();
+            today.setHours(0, 0, 0, 0);
+
+            (userBookings || []).forEach(booking => {
+                const bookingDate = new Date(booking.EventDate);
+                if (bookingDate >= today) {
+                    const dateKey = booking.EventDate;
+                    if (!bookings[dateKey]) {
+                        bookings[dateKey] = [];
+                    }
+                    bookings[dateKey].push(booking);
+                }
+            });
+
             // Create header with navigation
             const header = document.createElement('div');
-            header.className = 'calendar-header d-flex justify-content-between align-items-center';
+            header.className = 'calendar-header d-flex justify-content-between align-items-center mb-2';
 
             const monthYearSpan = document.createElement('span');
             monthYearSpan.className = 'calendar-month-year';
             monthYearSpan.textContent = `${monthNames[month]} ${year}`;
 
             const navButtons = document.createElement('div');
+            navButtons.className = 'd-flex';
             navButtons.innerHTML = `
-                <button class="btn btn-sm btn-outline-secondary me-1" id="miniPrevMonth">
-                    <i class="fas fa-chevron-left"></i>
-                </button>
-                <button class="btn btn-sm btn-outline-secondary" id="miniNextMonth">
-                    <i class="fas fa-chevron-right"></i>
-                </button>
-            `;
+        <button class="btn btn-sm btn-outline-secondary me-1 mini-calendar-nav" data-direction="prev">
+            <i class="fas fa-chevron-left"></i>
+        </button>
+        <button class="btn btn-sm btn-outline-secondary mini-calendar-nav" data-direction="next">
+            <i class="fas fa-chevron-right"></i>
+        </button>
+    `;
 
             header.appendChild(monthYearSpan);
             header.appendChild(navButtons);
@@ -1168,65 +1081,95 @@
                 calendarGrid.appendChild(dayHeader);
             });
 
-            // Get calendar data
+            // Get first day of month and number of days
             const firstDay = new Date(year, month, 1);
             const lastDay = new Date(year, month + 1, 0);
             const daysInMonth = lastDay.getDate();
             const startingDayOfWeek = firstDay.getDay();
 
-            // Previous month days
+            // Get previous month's last few days
             const prevMonth = new Date(year, month, 0);
             const daysInPrevMonth = prevMonth.getDate();
 
+            // Add previous month's trailing days
             for (let i = startingDayOfWeek - 1; i >= 0; i--) {
                 const dayElement = createMiniCalendarDay(
                     daysInPrevMonth - i,
                     true,
                     year,
-                    month - 1
+                    month - 1,
+                    bookings
                 );
                 calendarGrid.appendChild(dayElement);
             }
 
-            // Current month days
+            // Add current month's days
             for (let day = 1; day <= daysInMonth; day++) {
-                const dayElement = createMiniCalendarDay(day, false, year, month);
+                const dayElement = createMiniCalendarDay(day, false, year, month, bookings);
                 calendarGrid.appendChild(dayElement);
             }
 
-            // Next month days
+            // Add next month's leading days
             const totalCells = calendarGrid.children.length - 7; // Subtract day headers
-            const remainingCells = 42 - totalCells;
+            const remainingCells = 42 - totalCells; // 6 rows × 7 days
             for (let day = 1; day <= remainingCells; day++) {
                 const dayElement = createMiniCalendarDay(
                     day,
                     true,
                     year,
-                    month + 1
+                    month + 1,
+                    bookings
                 );
                 calendarGrid.appendChild(dayElement);
             }
 
             miniCalendar.appendChild(calendarGrid);
 
-            // Add navigation event listeners
-            document.getElementById('miniPrevMonth').addEventListener('click', () => {
-                const newMonth = month === 0 ? 11 : month - 1;
-                const newYear = month === 0 ? year - 1 : year;
-                generateMiniCalendar(newMonth, newYear);
-            });
+            // Add event listeners to navigation buttons
+            document.querySelectorAll('.mini-calendar-nav').forEach(button => {
+                button.addEventListener('click', function () {
+                    const direction = this.getAttribute('data-direction');
+                    let newMonth, newYear;
 
-            document.getElementById('miniNextMonth').addEventListener('click', () => {
-                const newMonth = month === 11 ? 0 : month + 1;
-                const newYear = month === 11 ? year + 1 : year;
-                generateMiniCalendar(newMonth, newYear);
+                    if (direction === 'prev') {
+                        newMonth = miniCalendarCurrentDate.getMonth() - 1;
+                        if (newMonth < 0) {
+                            newMonth = 11;
+                            newYear = miniCalendarCurrentDate.getFullYear() - 1;
+                        } else {
+                            newYear = miniCalendarCurrentDate.getFullYear();
+                        }
+                    } else {
+                        newMonth = miniCalendarCurrentDate.getMonth() + 1;
+                        if (newMonth > 11) {
+                            newMonth = 0;
+                            newYear = miniCalendarCurrentDate.getFullYear() + 1;
+                        } else {
+                            newYear = miniCalendarCurrentDate.getFullYear();
+                        }
+                    }
+
+                    // Fetch bookings and regenerate mini calendar
+                    fetch('/request/api/bookings')
+                        .then(response => response.json())
+                        .then(data => {
+                            generateMiniCalendar(newMonth, newYear, data.user);
+                        })
+                        .catch(error => {
+                            console.error('Error fetching mini calendar data:', error);
+                        });
+                });
             });
         }
 
-        function createMiniCalendarDay(day, isOtherMonth, year, month) {
+        function createMiniCalendarDay(day, isOtherMonth, year, month, bookings) {
             const dayElement = document.createElement('div');
             dayElement.className = 'mini-calendar-day';
-            dayElement.textContent = day;
+
+            const dayNumber = document.createElement('div');
+            dayNumber.className = 'day-number';
+            dayNumber.textContent = day;
+            dayElement.appendChild(dayNumber);
 
             if (isOtherMonth) {
                 dayElement.classList.add('other-month');
@@ -1242,109 +1185,66 @@
                 dayElement.classList.add('today');
             }
 
-            // Check for bookings
+            // Check for user's bookings
             const dateString = `${year}-${String(month + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
             if (bookings[dateString] && !isOtherMonth) {
-                dayElement.classList.add('has-booking');
+                dayElement.classList.add('has-user-booking');
+
+                // Add indicator dot
+                const indicator = document.createElement('div');
+                indicator.className = 'user-booking-indicator';
+                dayElement.appendChild(indicator);
             }
 
             return dayElement;
         }
 
-        function showBookingDetails(date, bookingList) {
-            const formattedDate = new Date(date).toLocaleDateString('en-US', {
-                weekday: 'long',
-                year: 'numeric',
-                month: 'long',
-                day: 'numeric'
-            });
+        function fetchBookings() {
+            fetch('/request/api/bookings')
+                .then(response => {
+                    if (!response.ok) throw new Error('Network response was not ok');
+                    return response.json();
+                })
+                .then(data => {
+                    if (data.error) throw new Error(data.error);
 
-            let bookingDetails = `<strong>Bookings for ${formattedDate}:</strong><br><br>`;
-            bookingList.forEach((booking, index) => {
-                bookingDetails += `<div class="mb-2">
-                    <strong>${index + 1}. ${booking.title}</strong><br>
-                    <small class="text-muted">${booking.room} • ${booking.time}</small>
-                </div>`;
-            });
+                    // For main calendar - use all bookings
+                    renderCalendar(currentDate.getMonth(), currentDate.getFullYear(), data.all);
 
-            // Create modal element
-            const modalElement = document.createElement('div');
-            modalElement.className = 'modal fade';
-            modalElement.tabIndex = -1;
-            modalElement.innerHTML = `
-                <div class="modal-dialog">
-                    <div class="modal-content">
-                        <div class="modal-header bg-primary text-white">
-                            <h5 class="modal-title">
-                                <i class="fas fa-calendar-alt me-2"></i>Booking Details
-                            </h5>
-                            <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
-                        </div>
-                        <div class="modal-body">
-                            ${bookingDetails}
-                        </div>
-                        <div class="modal-footer">
-                            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
-                        </div>
-                    </div>
-                </div>
-            `;
-
-            document.body.appendChild(modalElement);
-            const modal = new bootstrap.Modal(modalElement);
-            modal.show();
-
-            // Remove modal from DOM after it's closed
-            modalElement.addEventListener('hidden.bs.modal', function () {
-                document.body.removeChild(modalElement);
-            });
+                    // For mini calendar - use only user's bookings
+                    generateMiniCalendar(currentDate.getMonth(), currentDate.getFullYear(), data.user);
+                })
+                .catch(error => {
+                    console.error('Error fetching bookings:', error);
+                    // Error handling code...
+                });
         }
 
-        // Main calendar navigation
-        document.getElementById('prevMonth').addEventListener('click', () => {
-            currentDate.setMonth(currentDate.getMonth() - 1);
-            generateMainCalendar(currentDate.getMonth(), currentDate.getFullYear());
+        // Initialize the page
+        document.addEventListener('DOMContentLoaded', function () {
+            initializeTooltips();
+
+            // Fetch bookings and initialize both calendars
+            fetch('/request/api/bookings')
+                .then(response => response.json())
+                .then(data => {
+                    // Main calendar shows all bookings
+                    renderCalendar(currentDate.getMonth(), currentDate.getFullYear(), data.all);
+
+                    // Mini calendar shows only user's bookings
+                    generateMiniCalendar(
+                        miniCalendarCurrentDate.getMonth(),
+                        miniCalendarCurrentDate.getFullYear(),
+                        data.user
+                    );
+                })
+                .catch(error => {
+                    console.error('Error initializing calendars:', error);
+                });
+
+            // Set minimum date for booking form
+            document.getElementById('eventDate').setAttribute('min', new Date().toISOString().split('T')[0]);
         });
-
-        document.getElementById('nextMonth').addEventListener('click', () => {
-            currentDate.setMonth(currentDate.getMonth() + 1);
-            generateMainCalendar(currentDate.getMonth(), currentDate.getFullYear());
-        });
-
-        document.getElementById('todayBtn').addEventListener('click', () => {
-            currentDate = new Date();
-            generateMainCalendar(currentDate.getMonth(), currentDate.getFullYear());
-        });
-
-        // Form submission
-        document.getElementById('hallBookingForm').addEventListener('submit', function (e) {
-            e.preventDefault();
-
-            // Generate a random request ID
-            const requestId = 'HB-' + new Date().getFullYear() + '-' + String(Math.floor(Math.random() * 1000)).padStart(3, '0');
-            document.getElementById('modalRequestId').textContent = requestId;
-
-            // Hide booking modal and show success modal
-            const bookingModal = bootstrap.Modal.getInstance(document.getElementById('bookingModal'));
-            bookingModal.hide();
-
-            setTimeout(() => {
-                const successModal = new bootstrap.Modal(document.getElementById('successModal'));
-                successModal.show();
-            }, 300);
-
-            // Reset form
-            this.reset();
-        });
-
-        // Set minimum date for booking form
-        const today = new Date().toISOString().split('T')[0];
-        document.getElementById('eventDate').setAttribute('min', today);
-
-        // Initialize calendars on page load
-        generateMiniCalendar();
-        generateMainCalendar();
-
     </script>
 </body>
 

@@ -33,7 +33,7 @@ def request_login():
 
                 with conn.cursor() as cursor:
                     cursor.execute("""
-                        SELECT UserID
+                        SELECT UserID, UserName
                         FROM tblGlobalUserMaster
                         WHERE LOWER(UserID) = LOWER(?) AND Password = ?
                     """, (user_id, password))
@@ -43,7 +43,9 @@ def request_login():
                         flash("Invalid User ID or Password.", "danger")
                         return redirect(url_for('request.request_login'))
 
-                    session['user_id'] = user_id
+                    session['user_id'] = user.UserID
+                    session['user_name'] = user.UserName
+                    session['show_calendar_reminder'] = True  # Add this flag
                     logger.info(f"Successful login for User ID: {user_id}")
                     return redirect(url_for('request.home'))
 
@@ -52,8 +54,12 @@ def request_login():
             flash("An error occurred while verifying credentials.", "danger")
             return redirect(url_for('request.request_login'))
 
-    # For GET requests, render the login page
-    return render_template('request/login.html') 
+    return render_template('request/login.html')
+
+@request_bp.route('/clear_calendar_reminder', methods=['POST'])
+def clear_calendar_reminder():
+    session.pop('show_calendar_reminder', None)
+    return '', 204
 
 @request_bp.route('/home')
 def home():
@@ -73,7 +79,7 @@ def home():
                 # Approved count (all time)
                 cursor.execute("""
                     SELECT COUNT(*) 
-                    FROM VisitorRequestManagement 
+                    FROM tblVisitorRequestManagement 
                     WHERE CreatedBy = ? AND RequestStatus = 'Approved'
                 """, (user_id,))
                 approved_count = cursor.fetchone()[0]
@@ -81,7 +87,7 @@ def home():
                 # Pending count (all time)
                 cursor.execute("""
                     SELECT COUNT(*) 
-                    FROM VisitorRequestManagement 
+                    FROM tblVisitorRequestManagement 
                     WHERE CreatedBy = ? AND RequestStatus = 'Pending'
                 """, (user_id,))
                 pending_count = cursor.fetchone()[0]
@@ -89,7 +95,7 @@ def home():
                 # Rejected count (all time)
                 cursor.execute("""
                     SELECT COUNT(*) 
-                    FROM VisitorRequestManagement 
+                    FROM tblVisitorRequestManagement 
                     WHERE CreatedBy = ? AND RequestStatus = 'Rejected'
                 """, (user_id,))
                 rejected_count = cursor.fetchone()[0]
@@ -97,7 +103,7 @@ def home():
                 # Today's count - only events happening today
                 cursor.execute("""
                     SELECT COUNT(*) 
-                    FROM VisitorRequestManagement 
+                    FROM tblVisitorRequestManagement 
                     WHERE CreatedBy = ? 
                     AND CAST(EventDate AS DATE) = ?
                     AND StartTime >= ?
@@ -114,7 +120,7 @@ def home():
                         StartTime,
                         EndTime,
                         RequestStatus
-                    FROM VisitorRequestManagement
+                    FROM tblVisitorRequestManagement
                     WHERE CreatedBy = ?
                     AND (
                         (EventDate > CAST(? AS DATE)) OR
@@ -169,7 +175,7 @@ def home():
                         RequestStatus,
                         RequestDateTime,
                         ResponseDateTime
-                    FROM VisitorRequestManagement
+                    FROM tblVisitorRequestManagement
                     WHERE CreatedBy = ?
                     ORDER BY RequestDateTime DESC
                 """, (user_id,))
@@ -248,15 +254,45 @@ def submit_booking():
         if end_datetime <= start_datetime:
             return jsonify({'success': False, 'message': 'End time must be after start time'}), 400
 
+        # Determine meeting type (default to 'Internal' if not specified)
+        meeting_type = 'Internal' if data.get('isInternal') else 'External'
+
         with closing(get_connection()) as conn:
             with conn.cursor() as cursor:
+                # First check for existing bookings
+                cursor.execute("""
+                    SELECT COUNT(*) 
+                    FROM tblVisitorRequestManagement
+                    WHERE HallName = ?
+                    AND EventDate = ?
+                    AND (
+                        (StartTime < ? AND EndTime > ?) OR
+                        (StartTime < ? AND EndTime > ?) OR
+                        (StartTime >= ? AND EndTime <= ?)
+                    )
+                    AND RequestStatus != 'Rejected'
+                """, (
+                    data['hallName'], data['eventDate'],
+                    data['startTime'], data['startTime'],
+                    data['endTime'], data['endTime'],
+                    data['startTime'], data['endTime']
+                ))
+                
+                existing_count = cursor.fetchone()[0]
+                
+                if existing_count > 0:
+                    return jsonify({
+                        'success': False,
+                        'message': 'The hall is already booked during the requested time. Please choose a different time or hall.'
+                    }), 400
+
                 # Insert the booking request
                 cursor.execute("""
-                    INSERT INTO VisitorRequestManagement (
+                    INSERT INTO tblVisitorRequestManagement (
                         RequesterName, RequesterEmail, RequesterPhone, Department,
                         HallName, MeetingWith, EventDate, StartTime, EndTime, ExpectedAttendees,
-                        Purpose, RequestStatus, RequestDateTime, CreatedBy, CreatedOn
-                    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                        Purpose, RequestStatus, RequestDateTime, CreatedBy, CreatedOn, TypeOfMeeting
+                    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
                 """, (
                     data['requesterName'],
                     data['requesterEmail'],
@@ -269,21 +305,23 @@ def submit_booking():
                     data['endTime'],
                     int(data['expectedAttendees']),
                     data['purpose'],
-                    'Pending',  # Default status
+                    'Pending',
                     datetime.now().strftime('%Y-%m-%d %H:%M:%S'),
                     session['user_id'],
-                    datetime.now().strftime('%Y-%m-%d %H:%M:%S')
+                    datetime.now().strftime('%Y-%m-%d %H:%M:%S'),
+                    meeting_type  # Add the meeting type
                 ))
                 
-                # Get the newly created RequestID
-                request_id = cursor.execute("SELECT SCOPE_IDENTITY()").fetchone()[0]
+                # Get the actual database ID (primary key)
+                cursor.execute("SELECT IDENT_CURRENT('tblVisitorRequestManagement')")
+                request_id = cursor.fetchone()[0]
                 conn.commit()
 
-                logger.info(f"New booking request submitted by {session['user_id']} with RequestID: {request_id}")
+                logger.info(f"New booking request submitted by {session['user_id']} with ID: {request_id}, Type: {meeting_type}")
                 
                 return jsonify({
                     'success': True,
-                    'request_id': request_id,
+                    'request_id': request_id,  # This is the actual database ID
                     'message': 'Booking request submitted successfully'
                 })
 
@@ -291,10 +329,132 @@ def submit_booking():
         logger.error(f"Error submitting booking request: {str(e)}", exc_info=True)
         return jsonify({'success': False, 'message': 'An error occurred while submitting the booking'}), 500
     
+@request_bp.route('/api/bookings')
+def get_bookings():
+    current_date = datetime.now().strftime('%Y-%m-%d')
+    current_user_id = session.get('user_id')  # Get current user ID from session
+    
+    try:
+        with closing(get_connection()) as conn:
+            with conn.cursor() as cursor:
+                # Get ALL approved bookings (for main calendar) - EXCLUDE CANCELLED
+                cursor.execute("""
+                    SELECT 
+                        RequesterName,
+                        HallName,
+                        CONVERT(varchar, EventDate, 23) AS EventDate,
+                        CONVERT(varchar, StartTime, 108) AS StartTime,
+                        CONVERT(varchar, EndTime, 108) AS EndTime,
+                        CreatedBy,
+                        RequestStatus  -- Add status to the query
+                    FROM tblVisitorRequestManagement
+                    WHERE EventDate >= ? AND RequestStatus != 'Cancelled'  -- Exclude cancelled bookings
+                    ORDER BY EventDate, StartTime
+                """, (current_date,))
+                
+                columns = [column[0] for column in cursor.description]
+                all_bookings = []
+                user_bookings = []
+                
+                for row in cursor.fetchall():
+                    booking = dict(zip(columns, row))
+                    # Format time to HH:MM
+                    booking['StartTime'] = booking['StartTime'][:5] if booking['StartTime'] else ''
+                    booking['EndTime'] = booking['EndTime'][:5] if booking['EndTime'] else ''
+                    
+                    # Check if this is current user's booking
+                    is_current_user = str(booking['CreatedBy']) == str(current_user_id)
+                    booking['isCurrentUser'] = is_current_user
+                    
+                    all_bookings.append(booking)
+                    if is_current_user:
+                        user_bookings.append(booking)
+                
+                return jsonify({
+                    'all': all_bookings,
+                    'user': user_bookings
+                })
+    except Exception as e:
+        print(f"Error fetching bookings: {str(e)}")
+        return jsonify({"error": str(e)}), 500
+
+@request_bp.route('/api/pending-requests', methods=['GET'])
+def get_pending_requests():
+    if 'user_id' not in session:
+        return jsonify({'error': 'User not logged in'}), 401
+
+    try:
+        with closing(get_connection()) as conn:
+            with conn.cursor() as cursor:
+                # Fetch pending requests for the current user
+                cursor.execute("""
+                    SELECT RequestID, RequesterName, HallName, MeetingWith, 
+                           EventDate, StartTime, EndTime, Purpose
+                    FROM tblVisitorRequestManagement
+                    WHERE CreatedBy = ? AND RequestStatus = 'Pending'
+                    ORDER BY EventDate, StartTime
+                """, (session['user_id'],))
+                
+                requests = []
+                for row in cursor.fetchall():
+                    requests.append({
+                        'RequestID': row.RequestID,
+                        'RequesterName': row.RequesterName,
+                        'HallName': row.HallName,
+                        'MeetingWith': row.MeetingWith,
+                        'EventDate': row.EventDate.strftime('%Y-%m-%d') if row.EventDate else '',
+                        'StartTime': str(row.StartTime) if row.StartTime else '',
+                        'EndTime': str(row.EndTime) if row.EndTime else '',
+                        'Purpose': row.Purpose
+                    })
+                
+                return jsonify({'requests': requests})
+                
+    except Exception as e:
+        logger.error(f"Error fetching pending requests: {str(e)}", exc_info=True)
+        return jsonify({'error': 'An error occurred while fetching pending requests'}), 500
+
+@request_bp.route('/api/cancel-request/<int:request_id>', methods=['POST'])
+def cancel_request(request_id):
+    if 'user_id' not in session:
+        return jsonify({'error': 'User not logged in'}), 401
+
+    try:
+        with closing(get_connection()) as conn:
+            with conn.cursor() as cursor:
+                # Check if the request belongs to the current user
+                cursor.execute("""
+                    SELECT CreatedBy FROM tblVisitorRequestManagement 
+                    WHERE RequestID = ? AND RequestStatus = 'Pending'
+                """, (request_id,))
+                
+                result = cursor.fetchone()
+                if not result:
+                    return jsonify({'error': 'Request not found or already processed'}), 404
+                
+                if result.CreatedBy != session['user_id']:
+                    return jsonify({'error': 'Unauthorized to cancel this request'}), 403
+                
+                # Update the request status to Cancelled - ADD ModifiedBy FIELD
+                cursor.execute("""
+                    UPDATE tblVisitorRequestManagement 
+                    SET RequestStatus = 'Cancelled', 
+                        ModifiedOn = ?,
+                        ModifiedBy = ?
+                    WHERE RequestID = ?
+                """, (datetime.now(), session['user_id'], request_id))
+                
+                conn.commit()
+                
+                logger.info(f"Request {request_id} cancelled by user {session['user_id']}")
+                
+                return jsonify({'success': True, 'message': 'Request cancelled successfully'})
+                
+    except Exception as e:
+        logger.error(f"Error cancelling request {request_id}: {str(e)}", exc_info=True)
+        return jsonify({'error': 'An error occurred while cancelling the request'}), 500
+    
 @request_bp.route('/logout')
 def logout():
-    user_id = session.get('user_id', 'Unknown')
-    session.clear()
-    logger.info(f"User {user_id} logged out")
-    flash("You have been successfully logged out.", "success")
+    session.clear()  # Clear all session data
     return redirect(url_for('request.request_login'))

@@ -1,13 +1,13 @@
 import pyodbc
 
 def get_connection(
-    # server="172.20.0.254,1433",
-    server="U2-ESSL-SERVER\SQLEXPRESS",
+    server="172.20.0.254,1433",
+    # server="U2-ESSL-SERVER\\SQLEXPRESS",
     database="sel2_master",
-    # username="cltte",
-    username="sa",
-    # password="Cltte@#u2",
-    password="essl",
+    username="cltte",
+    # username="sa",
+    password="Cltte@#u2",
+    # password="essl",
     driver="{ODBC Driver 17 for SQL Server}"
 ):
     try:

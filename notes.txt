@@ -1,0 +1,92 @@
+<---- OTP ---->
+
+ <!-- <div class="col-md-4 mb-2 mb-md-0">
+     <label for="otp" class="form-label">OTP</label>
+     <input type="text" class="form-control" id="otp" name="otp"
+         maxlength="6">
+ </div>
+ <div class="col-md-2">
+     <button type="button" class="btn btn-primary w-100" id="verifyOtpBtn">
+         <i class="fas fa-check me-1"></i> Verify
+     </button>
+ </div> -->
+
+ // // Function to send OTP
+// function sendOtp(phone) {
+//     const otpStatus = document.getElementById('otpStatus');
+//     otpStatus.textContent = 'Sending OTP...';
+//     otpStatus.className = 'mt-1 small text-info';
+
+//     fetch('/visitor/api/send_otp', {
+//         method: 'POST',
+//         headers: {
+//             'Content-Type': 'application/json',
+//         },
+//         body: JSON.stringify({
+//             phone: phone
+//         })
+//     })
+//         .then(response => response.json())
+//         .then(data => {
+//             if (data.success) {
+//                 otpStatus.textContent = 'OTP sent successfully!';
+//                 otpStatus.className = 'mt-1 small text-success';
+//             } else {
+//                 throw new Error(data.message || 'Failed to send OTP');
+//             }
+//         })
+//         .catch(error => {
+//             otpStatus.textContent = error.message;
+//             otpStatus.className = 'mt-1 small text-danger';
+//             console.error('Error sending OTP:', error);
+//         });
+// }
+
+// // Function to verify OTP
+// function verifyOtp(phone, otp) {
+//     const otpStatus = document.getElementById('otpStatus');
+//     const verifyOtpBtn = document.getElementById('verifyOtpBtn');
+
+//     otpStatus.textContent = 'Verifying OTP...';
+//     otpStatus.className = 'mt-1 small text-info';
+//     verifyOtpBtn.disabled = true;
+//     verifyOtpBtn.innerHTML = '<i class="fas fa-spinner fa-spin me-1"></i> Verifying';
+
+//     fetch('/visitor/api/verify_otp', {
+//         method: 'POST',
+//         headers: {
+//             'Content-Type': 'application/json',
+//         },
+//         body: JSON.stringify({
+//             phone: phone,
+//             otp: otp
+//         })
+//     })
+//         .then(response => response.json())
+//         .then(data => {
+//             if (data.success) {
+//                 otpStatus.textContent = 'OTP verified successfully!';
+//                 otpStatus.className = 'mt-1 small text-success';
+//                 verifyOtpBtn.classList.remove('btn-primary');
+//                 verifyOtpBtn.classList.add('btn-success');
+//                 verifyOtpBtn.innerHTML = '<i class="fas fa-check-circle me-1"></i> Verified';
+//                 verifyOtpBtn.disabled = true;
+//             } else {
+//                 throw new Error(data.message || 'Invalid OTP');
+//             }
+//         })
+//         .catch(error => {
+//             otpStatus.textContent = error.message;
+//             otpStatus.className = 'mt-1 small text-danger';
+//             verifyOtpBtn.classList.remove('btn-primary', 'btn-success');
+//             verifyOtpBtn.classList.add('btn-danger');
+//             verifyOtpBtn.innerHTML = '<i class="fas fa-times me-1"></i> Failed';
+//             setTimeout(() => {
+//                 verifyOtpBtn.classList.remove('btn-danger');
+//                 verifyOtpBtn.classList.add('btn-primary');
+//                 verifyOtpBtn.innerHTML = '<i class="fas fa-check me-1"></i> Verify';
+//                 verifyOtpBtn.disabled = false;
+//             }, 2000);
+//             console.error('Error verifying OTP:', error);
+//         });
+// }

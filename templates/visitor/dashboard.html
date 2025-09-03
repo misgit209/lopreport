@@ -13,36 +13,39 @@
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <link rel="stylesheet" href="/static/css/visitor/dashboard.css">
 
-
 </head>
 
 <body>
     <!-- Sidebar Navigation -->
     <aside class="sidebar">
         <div class="sidebar-header">
-            <a href="#" class="sidebar-brand">
-                <i class="fas fa-user-shield"></i>
-                <span>VisitorPro</span>
+            <a href="#">
+                <img src="/static/images/Salzer.png" alt="Salzer Logo" width="200" height="30">
             </a>
+            <button class="menu-toggle close-btn d-lg-none" aria-label="Close menu">
+                <i class="fas fa-times"></i>
+            </button>
         </div>
 
         <nav class="sidebar-nav">
             <ul class="nav flex-column">
                 <li class="nav-item">
                     <a href="{{ url_for('visitor.dashboard') }}" class="nav-link active">
-                        <img src="/static/svgs/dashboard.svg" alt="dashboard icon" class="svg-icon">
+                        <img src="/static/svgs/dashboard.svg" alt="dashboard icon" class="svg-icon" width="20"
+                            height="20">
                         <span>Dashboard</span>
                     </a>
                 </li>
                 <li class="nav-item">
                     <a href="{{ url_for('visitor.visitor_page') }}" class="nav-link">
-                        <img src="/static/svgs/group.svg" alt="group icon" class="svg-icon">
+                        <img src="/static/svgs/group.svg" alt="visitors icon" width="20" height="20" class="svg-icon">
                         <span>Visitors</span>
                     </a>
                 </li>
                 <li class="nav-item">
                     <a href="{{ url_for('visitor.report_page') }}" class="nav-link">
-                        <img src="/static/svgs/calendar.svg" alt="report icon" class="svg-icon">
+                        <img src="/static/svgs/nav-calendar.svg" alt="report icon" width="20" height="20"
+                            class="svg-icon">
                         <span>Reports</span>
                     </a>
                 </li>
@@ -50,42 +53,39 @@
         </nav>
 
         <div class="sidebar-footer">
-            <span>Developed By <a href="https://www.salzergroup.net/"> Salzer U2</a></span>
+            <span>Developed By <a href="https://www.salzergroup.net/">Salzer U2</a></span>
         </div>
     </aside>
 
-    <!-- Main Content -->
-    <div class="main-content">
-        <!-- Top Navigation -->
-        <nav class="top-nav">
-            <button class="menu-toggle">
-                <i class="fas fa-bars"></i>
+    <!-- Top Navigation -->
+    <nav class="top-nav">
+        <button class="menu-toggle d-lg-none" aria-label="Open menu">
+            <i class="fas fa-bars"></i>
+        </button>
+
+        <h1 class="page-title">SEL Visitor Management</h1>
+
+        <div class="nav-right">
+            <div class="notification">
+                <i class="fas fa-bell"></i>
+                <span class="notification-badge"></span>
+            </div>
+            <button class="logout" onclick="window.location.href='/visitor/logout'">
+                <i class="fas fa-sign-out-alt"></i>
+                <span>Logout</span>
             </button>
+        </div>
+    </nav>
 
-            <div class="search-bar">
-                <i class="fas fa-search"></i>
-                <input type="text" placeholder="Search visitors, appointments...">
-            </div>
-
-            <div class="nav-right">
-                <div class="notification">
-                    <i class="fas fa-bell"></i>
-                    <span class="notification-badge" style="display: none;">0</span>
-                </div>
-                <button class="btn btn-sm btn-outline-danger logout" onclick="window.location.href='/visitor/logout'">
-                    <i class="fas fa-sign-out-alt me-1"></i> Logout
-                </button>
-            </div>
-        </nav>
-
-        <!-- Content Wrapper -->
-        <div class="content-wrapper">
+    <!-- Main Content -->
+    <main class="main-content">
+        <div class="container-fluid">
             <!-- Page Header -->
             <div class="page-header">
                 <h1 class="page-title">Visitor Dashboard</h1>
                 <div class="breadcrumb">
                     <a href="#">Home</a>
-                    <span>/</span>
+                    <span class="divider">/</span>
                     <span>Dashboard</span>
                 </div>
             </div>
@@ -94,7 +94,7 @@
             <div class="stats-grid">
                 <!-- Total Visitors Card -->
                 <div class="stat-card fade-in">
-                    <div class="stat-icon" style="background: var(--gradient-primary);">
+                    <div class="stat-icon">
                         <i class="fas fa-users"></i>
                     </div>
                     <h3 class="stat-value">{{ total_visitors }}</h3>
@@ -106,8 +106,8 @@
                 </div>
 
                 <!-- Active Today Card -->
-                <div class="stat-card fade-in delay-1">
-                    <div class="stat-icon" style="background: var(--gradient-primary);">
+                <div class="stat-card fade-in">
+                    <div class="stat-icon" style="background: var(--gradient-primary-reverse);">
                         <i class="fas fa-user-check"></i>
                     </div>
                     <h3 class="stat-value">{{ today_visitors }}</h3>
@@ -119,7 +119,7 @@
                 </div>
 
                 <!-- Upcoming Appointments Card -->
-                <div class="stat-card fade-in delay-2">
+                <div class="stat-card fade-in">
                     <div class="stat-icon" style="background: linear-gradient(135deg, #dfb4a5 0%, #d19e8c 100%);">
                         <i class="fas fa-calendar"></i>
                     </div>
@@ -135,46 +135,52 @@
 
             <!-- Charts Section -->
             <div class="chart-row">
+                <!-- Visitor Trends Chart -->
                 <div class="chart-card fade-in">
                     <div class="chart-header">
                         <h3 class="chart-title">Visitor Trends</h3>
-                        <div class="btn-group">
-                            <button class="btn btn-sm btn-outline-secondary">Day</button>
-                            <button class="btn btn-sm btn-outline-secondary active">Week</button>
-                            <button class="btn btn-sm btn-outline-secondary">Month</button>
+                        <div class="time-filter">
+                            <button class="time-filter-btn">Day</button>
+                            <button class="time-filter-btn active">Week</button>
+                            <button class="time-filter-btn">Month</button>
                         </div>
                     </div>
-                    <div class="chart-container">
-                        <canvas id="visitorChart"></canvas>
+                    <div class="chart-body">
+                        <div class="chart-container">
+                            <canvas id="visitorChart"></canvas>
+                        </div>
                     </div>
                 </div>
 
-                <div class="chart-card fade-in delay-1">
+                <!-- Visitor Types Chart -->
+                <div class="chart-card fade-in">
                     <div class="chart-header">
                         <h3 class="chart-title">Visitor Types</h3>
                     </div>
-                    <div class="chart-container">
-                        <canvas id="visitorTypeChart"></canvas>
+                    <div class="chart-body">
+                        <div class="chart-container">
+                            <canvas id="visitorTypeChart"></canvas>
+                        </div>
                     </div>
                 </div>
             </div>
         </div>
-    </div>
+    </main>
 
-    <!-- Notification Popup Modal -->
+    <!-- Notification Modal -->
     <div class="modal fade" id="requestsModal" tabindex="-1" aria-hidden="true">
         <div class="modal-dialog modal-lg">
             <div class="modal-content">
-                <div class="modal-header bg-primary text-white">
+                <div class="modal-header">
                     <h5 class="modal-title">Pending Visitor Requests</h5>
-                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"
-                        aria-label="Close"></button>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
                 </div>
                 <div class="modal-body">
                     <div class="table-responsive">
                         <table class="table table-hover">
                             <thead>
                                 <tr>
+                                    <th>Name</th>
                                     <th>Visitor</th>
                                     <th>Purpose</th>
                                     <th>Date</th>
@@ -196,471 +202,7 @@
     </div>
 
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
-    <script>
-        // Global chart references
-        let visitorChart, typeChart;
-        let requestsModal;
-
-        document.addEventListener('DOMContentLoaded', function () {
-            // Initialize modal
-            requestsModal = new bootstrap.Modal(document.getElementById('requestsModal'));
-
-            // Load notification count immediately
-            updateNotificationCount();
-
-            // Load charts
-            loadCharts();
-
-            // Set up periodic refresh (every 5 minutes)
-            setInterval(updateNotificationCount, 300000);
-
-
-            // Time period buttons functionality
-            document.querySelectorAll('.btn-group .btn').forEach(btn => {
-                btn.addEventListener('click', function () {
-                    document.querySelectorAll('.btn-group .btn').forEach(b => b.classList.remove('active'));
-                    this.classList.add('active');
-                    loadCharts();
-                });
-            });
-
-            // Notification click handler
-            document.querySelector('.notification').addEventListener('click', async function () {
-                await showRequestsModal();
-            });
-        });
-        // Helper function to format date
-        function formatDate(dateString) {
-            if (!dateString) return 'N/A';
-            const date = new Date(dateString);
-            return date.toLocaleDateString('en-US', {
-                year: 'numeric',
-                month: 'short',
-                day: 'numeric'
-            });
-        }
-
-        // Helper function to format time
-        function formatTime(timeString) {
-            if (!timeString) return 'N/A';
-            // If it's a full datetime string, extract just the time part
-            if (timeString.includes('T')) {
-                timeString = timeString.split('T')[1];
-            }
-            // Return just the HH:MM part
-            return timeString.substring(0, 5);
-        }
-
-        async function showRequestsModal() {
-            try {
-                // Show loading state
-                document.getElementById('requestsTableBody').innerHTML = `
-            <tr>
-                <td colspan="5" class="text-center py-4">
-                    <div class="spinner-border text-primary" role="status">
-                        <span class="visually-hidden">Loading...</span>
-                    </div>
-                </td>
-            </tr>`;
-
-                requestsModal.show();
-
-                // Fetch requests
-                const response = await fetch('/visitor/api/get_pending_requests_details');
-                if (!response.ok) throw new Error('Failed to fetch requests');
-
-                const data = await response.json();
-
-                // Debug: Log the response data
-                console.log("Response data:", data);
-
-                if (!data.success) throw new Error(data.message || 'Failed to load requests');
-                if (!data.requests) throw new Error('No requests data in response');
-
-                renderRequests(data.requests);
-
-                // Update notification badge count after loading
-                updateNotificationBadge(data.requests.length);
-            } catch (error) {
-                console.error('Error loading requests:', error);
-                document.getElementById('requestsTableBody').innerHTML = `
-            <tr>
-                <td colspan="5" class="text-center text-danger py-4">
-                    Error loading requests: ${error.message}
-                </td>
-            </tr>`;
-            }
-        }
-
-        function renderRequests(requests) {
-            const tbody = document.getElementById('requestsTableBody');
-
-            if (!requests || requests.length === 0) {
-                tbody.innerHTML = `
-            <tr>
-                <td colspan="5" class="text-center py-4 text-muted">
-                    No pending visitor requests
-                </td>
-            </tr>`;
-                return;
-            }
-
-            tbody.innerHTML = requests.map(request => `
-        <tr data-request-id="${request.requestId}">
-            <td>${request.meetingWith || 'N/A'}</td>
-            <td>${request.purpose || 'N/A'}</td>
-            <td>${formatDate(request.eventDate)}</td>
-            <td>${formatTime(request.startTime)}</td>
-            <td>
-                <div class="btn-group btn-group-sm">
-                    <button class="btn btn-success approve-btn" title="Approve">
-                        <i class="fas fa-check"></i>
-                    </button>
-                    <button class="btn btn-danger reject-btn" title="Reject">
-                        <i class="fas fa-times"></i>
-                    </button>
-                </div>
-            </td>
-        </tr>
-    `).join('');
-
-            // Add event listeners to buttons
-            document.querySelectorAll('.approve-btn').forEach(btn => {
-                btn.addEventListener('click', (e) => handleRequestAction(e, 'Approved'));
-            });
-
-            document.querySelectorAll('.reject-btn').forEach(btn => {
-                btn.addEventListener('click', (e) => handleRequestAction(e, 'Rejected'));
-            });
-        }
-
-        // Call this when the page loads and periodically afterwards
-        document.addEventListener('DOMContentLoaded', function () {
-            // Initial update
-            updateNotificationCount();
-
-            // Update every 5 minutes (adjust as needed)
-            setInterval(updateNotificationCount, 300000);
-        });
-
-        function setupNotificationSystem() {
-            // Initial load
-            checkForNewRequests();
-
-            // Check every 5 minutes (adjust as needed)
-            setInterval(checkForNewRequests, 300000);
-        }
-
-        async function checkForNewRequests() {
-            try {
-                const response = await fetch('/visitor/api/get_pending_requests');
-                if (!response.ok) throw new Error('Network response was not ok');
-
-                const data = await response.json();
-                if (data.success) {
-                    updateNotificationBadge(data.count);
-
-                    // Optional: Show toast for new requests
-                    if (data.count > 0) {
-                        showNewRequestNotification(data.count);
-                    }
-                }
-            } catch (error) {
-                console.error('Error checking requests:', error);
-            }
-        }
-
-        // Update the notification badge with the actual count
-        function updateNotificationBadge(count) {
-            const badge = document.querySelector('.notification-badge');
-            if (count > 0) {
-                badge.textContent = count;
-                badge.style.display = 'flex';
-            } else {
-                badge.style.display = 'none';
-            }
-        }
-
-        // Fetch and update the notification count
-        async function updateNotificationCount() {
-            try {
-                const response = await fetch('/visitor/api/get_pending_requests');
-                if (!response.ok) throw new Error('Failed to fetch notification count');
-
-                const data = await response.json();
-                if (data.success) {
-                    updateNotificationBadge(data.count);
-                }
-            } catch (error) {
-                console.error('Error updating notification count:', error);
-                // Keep the badge hidden if there's an error
-                updateNotificationBadge(0);
-            }
-        }
-
-        function showNewRequestNotification(count) {
-            // You can implement a toast notification here if desired
-            console.log(`You have ${count} new visitor requests`);
-        }
-
-        function renderRequests(requests) {
-            const tbody = document.getElementById('requestsTableBody');
-
-            if (!requests || requests.length === 0) {
-                tbody.innerHTML = `
-                <tr>
-                    <td colspan="5" class="text-center py-4 text-muted">
-                        No pending visitor requests
-                    </td>
-                </tr>`;
-                return;
-            }
-
-            tbody.innerHTML = requests.map(request => `
-            <tr data-request-id="${request.requestId}">
-                <td>${request.visitorName || 'N/A'}</td>
-                <td>${request.purpose || 'N/A'}</td>
-                <td>${formatDate(request.eventDate)}</td>
-                <td>${formatTime(request.eventTime)}</td>
-                <td>
-                    <div class="btn-group btn-group-sm">
-                        <button class="btn btn-success approve-btn" title="Approve">
-                            <i class="fas fa-check"></i>
-                        </button>
-                        <button class="btn btn-danger reject-btn" title="Reject">
-                            <i class="fas fa-times"></i>
-                        </button>
-                    </div>
-                </td>
-            </tr>
-        `).join('');
-
-            // Add event listeners to buttons
-            document.querySelectorAll('.approve-btn').forEach(btn => {
-                btn.addEventListener('click', (e) => handleRequestAction(e, 'Approved'));
-            });
-
-            document.querySelectorAll('.reject-btn').forEach(btn => {
-                btn.addEventListener('click', (e) => handleRequestAction(e, 'Rejected'));
-            });
-        }
-
-        async function handleRequestAction(event, action) {
-            const row = event.target.closest('tr');
-            const requestId = row.dataset.requestId;
-
-            try {
-                // Show loading on the row
-                row.innerHTML = `
-                <td colspan="5" class="text-center py-2">
-                    <div class="spinner-border spinner-border-sm" role="status">
-                        <span class="visually-hidden">Processing...</span>
-                    </div>
-                </td>`;
-
-                const response = await fetch('/visitor/api/update_request_status', {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                    },
-                    body: JSON.stringify({
-                        requestId: requestId,
-                        status: action
-                    })
-                });
-
-                if (!response.ok) throw new Error('Network response was not ok');
-
-                const result = await response.json();
-                if (!result.success) throw new Error(result.message || 'Action failed');
-
-                // Remove the row on success
-                row.remove();
-
-                // Update notification badge count
-                const remainingRows = document.querySelectorAll('#requestsTableBody tr').length;
-                updateNotificationBadge(remainingRows > 1 ? remainingRows - 1 : 0);
-
-            } catch (error) {
-                console.error('Error updating request:', error);
-                row.innerHTML = `
-                <td colspan="5" class="text-center text-danger py-2">
-                    Error: ${error.message}
-                    <button class="btn btn-sm btn-primary ms-2" onclick="window.location.reload()">
-                        Retry
-                    </button>
-                </td>`;
-            }
-        }
-
-        // Your existing chart-related functions
-        async function loadCharts() {
-            try {
-                showLoadingState();
-
-                const response = await fetch('/visitor/api/get_visitors');
-                if (!response.ok) {
-                    throw new Error(`HTTP error! Status: ${response.status}`);
-                }
-
-                const data = await response.json();
-                if (!data.success) {
-                    throw new Error('API returned unsuccessful response');
-                }
-
-                renderCharts(data.visitors);
-            } catch (error) {
-                console.error('Error loading charts:', error);
-                showErrorState(error.message);
-            }
-        }
-
-        function renderCharts(visitors) {
-            if (!visitors || visitors.length === 0) {
-                showErrorState('No visitor data available');
-                return;
-            }
-
-            // Process data for charts
-            const lineData = processLineChartData(visitors);
-            const pieData = processPieChartData(visitors);
-
-            // Destroy old charts if they exist
-            if (visitorChart) visitorChart.destroy();
-            if (typeChart) typeChart.destroy();
-
-            // Create Line Chart
-            const lineCtx = document.getElementById('visitorChart').getContext('2d');
-            visitorChart = new Chart(lineCtx, {
-                type: 'line',
-                data: {
-                    labels: lineData.labels,
-                    datasets: [{
-                        label: 'Visitors',
-                        data: lineData.values,
-                        backgroundColor: 'rgba(40, 98, 58, 0.1)',
-                        borderColor: 'rgba(40, 98, 58, 1)',
-                        borderWidth: 2,
-                        tension: 0.3,
-                        fill: true
-                    }]
-                },
-                options: getLineChartOptions()
-            });
-
-            // Create Pie Chart
-            const pieCtx = document.getElementById('visitorTypeChart').getContext('2d');
-            typeChart = new Chart(pieCtx, {
-                type: 'doughnut',
-                data: {
-                    labels: pieData.labels,
-                    datasets: [{
-                        data: pieData.values,
-                        backgroundColor: pieData.colors,
-                        borderWidth: 0
-                    }]
-                },
-                options: getPieChartOptions()
-            });
-        }
-
-        function processLineChartData(visitors) {
-            const dateCounts = {};
-            visitors.forEach(visitor => {
-                if (visitor.InTime) {
-                    const date = new Date(visitor.InTime);
-                    const dateStr = `${date.getDate()}/${date.getMonth() + 1}`; // DD/MM format
-                    dateCounts[dateStr] = (dateCounts[dateStr] || 0) + 1;
-                }
-            });
-
-            return {
-                labels: Object.keys(dateCounts),
-                values: Object.values(dateCounts)
-            };
-        }
-
-        function processPieChartData(visitors) {
-            const typeCounts = {};
-            visitors.forEach(visitor => {
-                const type = visitor.TypeOfVisitor || 'Unknown';
-                typeCounts[type] = (typeCounts[type] || 0) + 1;
-            });
-
-            return {
-                labels: Object.keys(typeCounts),
-                values: Object.values(typeCounts),
-                colors: [
-                    'rgba(40, 98, 58, 0.8)',
-                    'rgba(32, 58, 67, 0.8)',
-                    'rgba(223, 180, 165, 0.8)',
-                    'rgba(193, 54, 64, 0.8)'
-                ].slice(0, Object.keys(typeCounts).length)
-            };
-        }
-
-        function getLineChartOptions() {
-            return {
-                responsive: true,
-                maintainAspectRatio: false,
-                plugins: {
-                    legend: { display: false },
-                    tooltip: {
-                        callbacks: {
-                            label: ctx => `Visitors: ${ctx.raw}`
-                        }
-                    }
-                },
-                scales: {
-                    y: { beginAtZero: true },
-                    x: { grid: { display: false } }
-                }
-            };
-        }
-
-        function getPieChartOptions() {
-            return {
-                responsive: true,
-                maintainAspectRatio: false,
-                plugins: {
-                    legend: {
-                        position: 'bottom',
-                        labels: {
-                            padding: 20,
-                            usePointStyle: true
-                        }
-                    }
-                },
-                cutout: '70%'
-            };
-        }
-
-        function showLoadingState() {
-            const loadingHTML = `
-            <div class="chart-loading">
-                <div class="spinner-border text-primary" role="status">
-                    <span class="visually-hidden">Loading...</span>
-                </div>
-            </div>
-        `;
-            document.getElementById('visitorChart').innerHTML = loadingHTML;
-            document.getElementById('visitorTypeChart').innerHTML = loadingHTML;
-        }
-
-        function showErrorState(message) {
-            const errorHTML = `
-            <div class="chart-error text-danger">
-                <i class="fas fa-exclamation-triangle"></i>
-                <p>${message}</p>
-                <button class="btn btn-sm btn-primary mt-2" onclick="loadCharts()">
-                    Retry
-                </button>
-            </div>
-        `;
-            document.getElementById('visitorChart').innerHTML = errorHTML;
-            document.getElementById('visitorTypeChart').innerHTML = errorHTML;
-        }
-    </script>
+    <script src="/static/js/visitor/dashboard.js"></script>
 </body>
 
 </html>
