@@ -216,6 +216,13 @@
                         <span>Reports</span>
                     </a>
                 </li>
+                <li class="nav-item">
+                    <a href="{{ url_for('visitor.lopreport_page') }}"
+                        class="nav-link {% if request.endpoint == 'visitor.report_page' %}active{% endif %}">
+                        <img src="/static/svgs/nav-calendar.svg" class="svgs" alt="lopreports">
+                        <span>LOP Reports</span>
+                    </a>
+                </li>
             </ul>
         </nav>
 
@@ -533,56 +540,7 @@
     <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
     <script src="https://code.jquery.com/ui/1.12.1/jquery-ui.min.js"></script>
     <script src="/static/js/visitor/visitor.js"></script>
-    <script>
 
-        function showAlert(message, type = 'info', duration = 5000) {
-            const container = document.getElementById('alertContainer');
-            if (!container) return;
-
-            // Create alert element
-            const alert = document.createElement('div');
-            alert.className = `alert-popup alert-${type}`;
-
-            // Icon mapping
-            const icons = {
-                success: 'fa-circle-check',
-                error: 'fa-circle-xmark',
-                warning: 'fa-triangle-exclamation',
-                info: 'fa-circle-info'
-            };
-
-            // Alert content
-            alert.innerHTML = `
-        <div class="alert-content">
-            <i class="fas ${icons[type] || 'fa-circle-info'} alert-icon"></i>
-            <span>${message}</span>
-        </div>
-        <button class="alert-close" aria-label="Close">
-            <i class="fas fa-times"></i>
-        </button>
-        <div class="alert-progress"></div>
-    `;
-
-            // Add to container
-            container.appendChild(alert);
-
-            // Auto-remove after duration
-            let timeout;
-            const removeAlert = () => {
-                alert.style.animation = 'fadeOut 0.3s ease-out forwards';
-                setTimeout(() => alert.remove(), 300);
-            };
-
-            timeout = setTimeout(removeAlert, duration);
-
-            // Click to dismiss
-            alert.querySelector('.alert-close').addEventListener('click', () => {
-                clearTimeout(timeout);
-                removeAlert();
-            });
-        }
-
-    </script>
 </body>
 
 </html>

@@ -7,7 +7,6 @@ import base64
 import ssl
 from flask import Blueprint, Response, make_response, render_template, request, redirect, send_file, url_for, flash, session, jsonify
 from database import get_connection
-from datetime import datetime, time
 import logging
 from contextlib import closing
 import os
@@ -17,6 +16,7 @@ import numpy as np
 import smtplib
 from email.message import EmailMessage
 # from twilio.rest import Client 
+
 
 # Configure logging
 logging.basicConfig(level=logging.INFO)
@@ -90,7 +90,6 @@ def visitor_login():
         
     return render_template('visitor/login.html')
 
-
 @visitor_bp.route('/dashboard')
 def dashboard():
     if 'user_id' not in session:
@@ -150,6 +149,24 @@ def dashboard():
         logger.error(f"Error loading dashboard: {e}", exc_info=True)
         flash("Failed to load dashboard data.", "danger")
         return render_template('visitor/dashboard.html')
+    
+@visitor_bp.route('/api/get_visitors_chart')
+def get_visitors_chart():
+    with closing(get_connection()) as conn:
+        with conn.cursor() as cursor:
+            cursor.execute("""
+                SELECT 
+                    CONVERT(varchar, InTime, 120) as InTime,
+                    TypeOfVisitor
+                FROM tblVisitorManagement
+                WHERE InTime IS NOT NULL
+                ORDER BY InTime
+            """)
+            rows = cursor.fetchall()
+
+    visitors = [{"InTime": r[0], "TypeOfVisitor": r[1] or "Unknown"} for r in rows]
+    return jsonify({"success": True, "visitors": visitors})
+
 
 @visitor_bp.route('/visitor')
 def visitor_page():
@@ -162,6 +179,12 @@ def report_page():
     if 'user_id' not in session:
         return redirect(url_for('visitor.visitor_login'))
     return render_template('visitor/report.html', username=session['user_id'])
+
+@visitor_bp.route('/lopreport')
+def lopreport_page():
+    if 'user_id' not in session:
+        return redirect(url_for('visitor.visitor_login'))
+    return render_template('visitor/lopreport.html', username=session['user_id'])
 
 @visitor_bp.route('/api/save_visitor', methods=['POST'])
 def save_visitor():
@@ -296,115 +319,33 @@ def save_visitor():
                 "message": "Database operation failed"
             }), 500
 
-        # Send email if recipient found
+        # Send email asynchronously if recipient found
         if recipient_email:
             try:
-                smtp_config = {
-                    'server': "smtp.gmail.com",
-                    'port': 587,
-                    'username': "salzer2mis2019@gmail.com",
-                    'password': "gzljkoroeotcxfov",
-                    'timeout': 30
+                # Prepare email data for async sending
+                email_data = {
+                    'recipient': recipient_email,
+                    'name': name,
+                    'phone': phone,
+                    'address': address,
+                    'person_to_meet': person_to_meet,
+                    'purpose': purpose,
+                    'in_time': in_time,
+                    'id_card_no': id_card_no,
+                    'photo_path': photo_path if uploaded_file and os.path.exists(photo_path) else None
                 }
-
-                msg = EmailMessage()
-                msg['From'] = smtp_config['username']
-                msg['To'] = recipient_email
-                msg['Subject'] = f"Visitor Notification: {name}"
-
-                email_content = f"""
-                <html>
-                    <head>
-                        <style>
-                            body {{
-                                font-family: Arial, sans-serif;
-                                background-color: #f9f9f9;
-                                color: #333333;
-                                padding: 20px;
-                            }}
-                            .container {{
-                                background-color: #ffffff;
-                                padding: 20px;
-                                border-radius: 8px;
-                                box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
-                                max-width: 600px;
-                                margin: auto;
-                            }}
-                            h2 {{
-                                color: #2c3e50;
-                                border-bottom: 2px solid #e1e1e1;
-                                padding-bottom: 10px;
-                            }}
-                            p {{
-                                line-height: 1.6;
-                            }}
-                            .note {{
-                                margin-top: 30px;
-                                font-size: 12px;
-                                color: #888888;
-                                text-align: center;
-                            }}
-                        </style>
-                    </head>
-                    <body>
-                        <div class="container">
-                            <h2>Visitor Registered</h2>
-                            <p><strong>Visitor Name:</strong> {name}</p>
-                            <p><strong>Phone:</strong> {phone}</p>
-                            <p><strong>From:</strong> {address}</p>
-                            <p><strong>Meeting:</strong> {person_to_meet}</p>
-                            <p><strong>Purpose:</strong> {purpose}</p>
-                            <p><strong>Time:</strong> {in_time}</p>
-                            <p><strong>ID Card:</strong> {id_card_no if id_card_no else 'Not provided'}</p>
-                            <div class="note">
-                                <p>This is an auto-generated email.Please do not reply to this mail</p>
-                            </div>
-                        </div>
-                    </body>
-                </html>
-                """
-                msg.set_content(email_content, subtype='html')
-
-                # Attach photo if available
-                if photo_path and os.path.exists(photo_path):
-                    with open(photo_path, "rb") as f:
-                        msg.add_attachment(
-                            f.read(),
-                            maintype='image',
-                            subtype='jpeg',
-                            filename='visitor_photo.jpg'
-                        )
-
-                # Attempt send
-                max_attempts = 3
-                for attempt in range(1, max_attempts + 1):
-                    try:
-                        context = ssl.create_default_context()
-                        with smtplib.SMTP(smtp_config['server'], smtp_config['port'], timeout=smtp_config['timeout']) as server:
-                            server.ehlo()
-                            server.starttls(context=context)
-                            server.ehlo()
-                            server.login(smtp_config['username'], smtp_config['password'])
-                            server.send_message(msg)
-                            logger.info(f"Email sent successfully (attempt {attempt})")
-                            break
-                    except (smtplib.SMTPException, socket.timeout, ConnectionError) as e:
-                        logger.warning(f"Email attempt {attempt} failed: {str(e)}")
-                        if attempt < max_attempts:
-                            time.sleep(2)
-                        continue
-                    except Exception as e:
-                        logger.error(f"Unexpected email error: {str(e)}")
-                        raise
-                else:
-                    raise Exception(f"Failed to send email after {max_attempts} attempts")
-
+                
+                # Start async email sending
+                from threading import Thread
+                thread = Thread(target=send_email_async, args=(email_data,))
+                thread.daemon = True
+                thread.start()
+                
+                logger.info(f"Email sending initiated async for visitor: {name}")
+                
             except Exception as email_error:
-                logger.error(f"Email sending failed: {str(email_error)}", exc_info=True)
-                return jsonify({
-                    "success": True,
-                    "message": "Visitor saved but email notification failed"
-                })
+                logger.error(f"Failed to initiate email sending: {str(email_error)}", exc_info=True)
+                # Don't fail the whole operation if email setup fails
 
         return jsonify({
             "success": True,
@@ -417,6 +358,117 @@ def save_visitor():
             "success": False,
             "message": "An unexpected error occurred"
         }), 500
+
+
+def send_email_async(email_data):
+    """Send email asynchronously with retry logic"""
+    max_attempts = 3
+    smtp_config = {
+        'server': "smtp.gmail.com",
+        'port': 587,
+        'username': "salzer2mis2019@gmail.com",
+        'password': "gzljkoroeotcxfov",
+        'timeout': 30
+    }
+    
+    for attempt in range(1, max_attempts + 1):
+        try:
+            # Create email message
+            msg = EmailMessage()
+            msg['From'] = smtp_config['username']
+            msg['To'] = email_data['recipient']
+            msg['Subject'] = f"Visitor Notification: {email_data['name']}"
+
+            email_content = f"""
+            <html>
+                <head>
+                    <style>
+                        body {{
+                            font-family: Arial, sans-serif;
+                            background-color: #f9f9f9;
+                            color: #333333;
+                            padding: 20px;
+                        }}
+                        .container {{
+                            background-color: #ffffff;
+                            padding: 20px;
+                            border-radius: 8px;
+                            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+                            max-width: 600px;
+                            margin: auto;
+                        }}
+                        h2 {{
+                            color: #2c3e50;
+                            border-bottom: 2px solid #e1e1e1;
+                            padding-bottom: 10px;
+                        }}
+                        p {{
+                            line-height: 1.6;
+                        }}
+                        .note {{
+                            margin-top: 30px;
+                            font-size: 12px;
+                            color: #888888;
+                            text-align: center;
+                        }}
+                    </style>
+                </head>
+                <body>
+                    <div class="container">
+                        <h2>Visitor Registered</h2>
+                        <p><strong>Visitor Name:</strong> {email_data['name']}</p>
+                        <p><strong>Phone:</strong> {email_data['phone']}</p>
+                        <p><strong>From:</strong> {email_data['address']}</p>
+                        <p><strong>Meeting:</strong> {email_data['person_to_meet']}</p>
+                        <p><strong>Purpose:</strong> {email_data['purpose']}</p>
+                        <p><strong>Time:</strong> {email_data['in_time']}</p>
+                        <p><strong>ID Card:</strong> {email_data['id_card_no'] if email_data['id_card_no'] else 'Not provided'}</p>
+                        <div class="note">
+                            <p>This is an auto-generated email. Please do not reply to this mail</p>
+                        </div>
+                    </div>
+                </body>
+            </html>
+            """
+            msg.set_content(email_content, subtype='html')
+
+            # Attach photo if available
+            if email_data['photo_path'] and os.path.exists(email_data['photo_path']):
+                try:
+                    with open(email_data['photo_path'], "rb") as f:
+                        msg.add_attachment(
+                            f.read(),
+                            maintype='image',
+                            subtype='jpeg',
+                            filename='visitor_photo.jpg'
+                        )
+                except Exception as attach_error:
+                    logger.warning(f"Failed to attach photo: {str(attach_error)}")
+
+            # Send email
+            context = ssl.create_default_context()
+            with smtplib.SMTP(smtp_config['server'], smtp_config['port'], timeout=smtp_config['timeout']) as server:
+                server.ehlo()
+                server.starttls(context=context)
+                server.ehlo()
+                server.login(smtp_config['username'], smtp_config['password'])
+                server.send_message(msg)
+            
+            logger.info(f"Email sent successfully to {email_data['recipient']} (attempt {attempt})")
+            break  # Success, break out of retry loop
+            
+        except (smtplib.SMTPException, socket.timeout, ConnectionError, OSError) as e:
+            logger.warning(f"Email attempt {attempt} failed: {str(e)}")
+            if attempt < max_attempts:
+                wait_time = 2 ** attempt  # Exponential backoff
+                time.sleep(wait_time)
+            continue
+        except Exception as e:
+            logger.error(f"Unexpected email error: {str(e)}")
+            break  # Don't retry on unexpected errors
+            
+    else:
+        logger.error(f"Failed to send email after {max_attempts} attempts to {email_data['recipient']}")
 
 @visitor_bp.route('/api/get_visitors')
 def get_visitors():
@@ -797,25 +849,32 @@ def get_visitor_by_phone():
     if not phone:
         return jsonify({"success": False, "message": "Phone number required"}), 400
 
-    with closing(get_connection()) as conn:
-        with conn.cursor() as cursor:
-            cursor.execute("""
-                SELECT Name, Address, PersonToMeet, Purpose
-                FROM tblVisitorManagement
-                WHERE Phone = ?
-                ORDER BY CreatedOn DESC
-            """, (phone,))
-            row = cursor.fetchone()
-            if row:
-                return jsonify({
-                    "success": True,
-                    "name": row[0],
-                    "address": row[1],
-                    "personToMeet": row[2],
-                    "purpose": row[3]
-                })
-            else:
-                return jsonify({"success": False, "message": "No visitor found"}), 404
+    try:
+        with closing(get_connection()) as conn:
+            with conn.cursor() as cursor:
+                cursor.execute("""
+                    SELECT TOP 1 Name, TypeOfVisitor, Address, PersonToMeet, Purpose
+                    FROM tblVisitorManagement
+                    WHERE Phone = ?
+                    ORDER BY CreatedOn DESC
+                """, (phone,))
+                row = cursor.fetchone()
+                
+                if row:
+                    return jsonify({
+                        "success": True,
+                        "name": row[0] or "",
+                        "visitorType": row[1] or "",
+                        "address": row[2] or "",
+                        "personToMeet": row[3] or "",
+                        "purpose": row[4] or ""
+                    })
+                else:
+                    return jsonify({"success": False, "message": "No visitor found"})
+                    
+    except Exception as e:
+        print(f"Error fetching visitor by phone: {str(e)}")
+        return jsonify({"success": False, "message": "Database error"}), 500
             
 # @visitor_bp.route('/api/send_otp', methods=['POST'])
 # def send_otp():
@@ -1142,3 +1201,88 @@ def get_visitor_photo(visitor_id):
 def logout():
     session.pop('user_id', None)
     return redirect(url_for('visitor.visitor_login'))
+
+@visitor_bp.route('/api/lopapplications', methods=['GET'])
+def get_lop_applications():
+    if 'user_id' not in session:
+        return jsonify({"success": False, "message": "Unauthorized"}), 401
+
+    try:
+        with closing(get_connection()) as conn:
+            with conn.cursor() as cursor:
+                # Fetch all records, no punch number filter
+                cursor.execute("""
+                    SELECT *
+                    FROM tblLopApplication
+                """)
+                
+                lop_list = []
+                for row in cursor.fetchall():
+                    lop = {
+                        "id": row.ID,
+                        "name": row.Name,
+                        "punchNumber": row.PunchNumber,
+                        "appliedFor": row.AppliedFor,
+                        "approvedByManager": row.StatusByManager,
+                        "approvedByHR": row.StatusByHr
+                    }
+                    lop_list.append(lop)
+
+        return jsonify({
+            "success": True,
+            "lopApplications": lop_list,
+            "count": len(lop_list)
+        })
+
+    except Exception as e:
+        logger.error(f"Error fetching LOP applications: {str(e)}", exc_info=True)
+        return jsonify({"success": False, "message": str(e)}), 500
+    
+@visitor_bp.route("/api/update_security_status/<int:application_id>", methods=["PUT"])
+def update_security_status(id):
+    data = request.get_json()
+    new_status = data.get("SecurityStatus")
+
+    try:
+        with closing(get_connection()) as conn:
+            with conn.cursor() as cursor:
+                cursor.execute("""
+                    UPDATE tblLopApplication
+                    SET SecurityStatus = ?
+                    WHERE ID = ?
+                """, (new_status, id))
+                conn.commit()
+
+        return jsonify({"success": True, "message": "Status updated"})
+    except Exception as e:
+        print("Error updating status:", e)
+        return jsonify({"success": False, "message": str(e)}), 500
+    
+@visitor_bp.route('/api/update_status', methods=['POST'])
+def update_status():
+    data = request.get_json()
+    id = data.get('id')
+    status = data.get('status')
+
+    if not id or not status:
+        return jsonify({'success': False, 'message': 'Missing ID or Status'}), 400
+
+    try:
+        with closing(get_connection()) as conn:
+            with conn.cursor() as cursor:
+                cursor.execute("""
+                    UPDATE tblLopApplication
+                    SET StatusBySecurity = ?
+                    WHERE id = ?
+                """, (status, id))
+
+                print("Updating:", id, status)
+
+                conn.commit()
+
+        return jsonify({'success': True, 'message': 'Status updated successfully'})
+
+    except Exception as e:
+        print(f"❌ Error updating data: {e}")
+        return jsonify({'success': False, 'message': f'Error updating data: {str(e)}'}), 500
+

@@ -255,7 +255,10 @@ def submit_booking():
             return jsonify({'success': False, 'message': 'End time must be after start time'}), 400
 
         # Determine meeting type (default to 'Internal' if not specified)
-        meeting_type = 'Internal' if data.get('isInternal') else 'External'
+        is_internal = data.get('isInternal')
+        meeting_type = 'Internal' if is_internal else 'External'
+        # Set RequestStatus based on meeting type
+        request_status = 'Approved' if is_internal else 'Pending'
 
         with closing(get_connection()) as conn:
             with conn.cursor() as cursor:
@@ -305,7 +308,7 @@ def submit_booking():
                     data['endTime'],
                     int(data['expectedAttendees']),
                     data['purpose'],
-                    'Pending',
+                    request_status,
                     datetime.now().strftime('%Y-%m-%d %H:%M:%S'),
                     session['user_id'],
                     datetime.now().strftime('%Y-%m-%d %H:%M:%S'),

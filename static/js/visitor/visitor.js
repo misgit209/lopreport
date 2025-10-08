@@ -239,7 +239,7 @@ document.addEventListener('DOMContentLoaded', function () {
 
                     // Reset form
                     this.reset();
-                    document.getElementById('photoPreview').src = 'https://via.placeholder.com/80';
+                    document.getElementById('photoPreview').src = '/static/images/Profile.jpg';
                     document.getElementById('otherPurposeContainer').style.display = 'none';
 
                     // If on records page, refresh the data
@@ -360,6 +360,131 @@ document.addEventListener('DOMContentLoaded', function () {
             window.location.href = '/visitor/logout';
         }
     });
+
+    // ========== PHONE NUMBER AUTO-FILL FUNCTIONALITY ==========
+
+    // Phone number blur event to fetch visitor details
+    const phoneInput = document.getElementById('phone');
+    if (phoneInput) {
+        phoneInput.addEventListener('blur', function () {
+            const phone = phoneInput.value.trim();
+
+            // Only proceed if phone number is not empty and has at least 10 digits
+            if (phone.length < 10) {
+                clearVisitorFields();
+                return;
+            }
+
+            console.log('Fetching visitor details for phone:', phone); // Debug log
+
+            // Show loading state
+            const otpStatus = document.getElementById('otpStatus');
+            if (otpStatus) {
+                otpStatus.innerHTML = '<i class="fas fa-spinner fa-spin me-1"></i> Checking phone number...';
+                otpStatus.className = 'mt-2 small text-info';
+            }
+
+            fetch(`/visitor/api/get_visitor_by_phone?phone=${encodeURIComponent(phone)}`)
+                .then(response => {
+                    console.log('API Response status:', response.status); // Debug log
+                    if (!response.ok) {
+                        throw new Error('Network response was not ok');
+                    }
+                    return response.json();
+                })
+                .then(data => {
+                    console.log('API Response data:', data); // Debug log
+                    if (data.success) {
+                        // Populate the form fields with fetched data
+                        if (data.name && document.getElementById('name')) {
+                            document.getElementById('name').value = data.name;
+                        }
+                        if (data.visitorType && document.getElementById('visitorType')) {
+                            document.getElementById('visitorType').value = data.visitorType;
+                        }
+                        if (data.address && document.getElementById('address')) {
+                            document.getElementById('address').value = data.address;
+                        }
+                        if (data.personToMeet && document.getElementById('personToMeet')) {
+                            document.getElementById('personToMeet').value = data.personToMeet;
+                        }
+                        if (data.purpose && document.getElementById('purpose')) {
+                            document.getElementById('purpose').value = data.purpose;
+
+                            // Handle "other" purpose specifically
+                            if (data.purpose === 'other' && document.getElementById('otherPurposeContainer')) {
+                                document.getElementById('otherPurposeContainer').style.display = 'block';
+                            }
+                        }
+
+                        // Update status message
+                        if (otpStatus) {
+                            otpStatus.innerHTML = '<i class="fas fa-check-circle me-1"></i> Visitor details loaded successfully';
+                            otpStatus.className = 'mt-2 small text-success';
+                        }
+
+                        showAlert('Visitor details loaded successfully', 'success');
+                    }
+                    else {
+                        // No visitor found - clear the fields
+                        clearVisitorFields();
+
+                        if (otpStatus) {
+                            otpStatus.innerHTML = '<i class="fas fa-info-circle me-1"></i> New visitor - please fill in details';
+                            otpStatus.className = 'mt-2 small text-warning';
+                        }
+                    }
+                })
+                .catch(error => {
+                    console.error('Error fetching visitor details:', error);
+                    clearVisitorFields();
+
+                    if (otpStatus) {
+                        otpStatus.innerHTML = '<i class="fas fa-exclamation-triangle me-1"></i> Error checking phone number';
+                        otpStatus.className = 'mt-2 small text-danger';
+                    }
+
+                    showAlert('Error checking phone number: ' + error.message, 'danger');
+                });
+        });
+
+        // Clear fields when phone number is changed
+        phoneInput.addEventListener('input', function () {
+            const phone = phoneInput.value.trim();
+            if (phone.length === 0) {
+                clearVisitorFields();
+                const otpStatus = document.getElementById('otpStatus');
+                if (otpStatus) {
+                    otpStatus.innerHTML = '';
+                    otpStatus.className = 'mt-2 small';
+                }
+            }
+        });
+    }
+
+    // Function to clear visitor detail fields
+    function clearVisitorFields() {
+        const fieldsToClear = ['name', 'address', 'personToMeet'];
+
+        fieldsToClear.forEach(fieldId => {
+            const field = document.getElementById(fieldId);
+            if (field) {
+                field.value = '';
+            }
+        });
+
+        // Reset purpose dropdown but don't clear it completely
+        const purposeSelect = document.getElementById('purpose');
+        if (purposeSelect) {
+            purposeSelect.value = '';
+        }
+
+        // Hide other purpose container if visible
+        const otherPurposeContainer = document.getElementById('otherPurposeContainer');
+        if (otherPurposeContainer) {
+            otherPurposeContainer.style.display = 'none';
+        }
+    }
 });
 
 // Function to start web scanner
@@ -409,29 +534,50 @@ function handleScanSuccess(decodedText) {
 
 // Helper function to show alerts
 function showAlert(message, type) {
-    // Remove any existing alerts first
-    const existingAlerts = document.querySelectorAll('.custom-alert');
-    existingAlerts.forEach(alert => alert.remove());
+    const container = document.getElementById('alertContainer');
+    if (!container) return;
 
-    const alertHtml = `
-                <div class="custom-alert alert alert-${type} alert-dismissible fade show" role="alert">
-                    <div class="d-flex align-items-center">
-                        <i class="fas ${type === 'success' ? 'fa-check-circle' : 'fa-exclamation-circle'} me-2"></i>
-                        <div>${message}</div>
-                        <button type="button" class="btn-close ms-auto" data-bs-dismiss="alert"></button>
-                    </div>
-                </div>
-            `;
+    // Create alert element
+    const alert = document.createElement('div');
+    alert.className = `alert-popup alert-${type}`;
 
-    document.body.insertAdjacentHTML('beforeend', alertHtml);
+    // Icon mapping
+    const icons = {
+        success: 'fa-circle-check',
+        error: 'fa-circle-xmark',
+        warning: 'fa-triangle-exclamation',
+        info: 'fa-circle-info'
+    };
 
-    // Auto-remove after 5 seconds
-    setTimeout(() => {
-        const alert = document.querySelector('.custom-alert');
-        if (alert) {
-            alert.remove();
-        }
-    }, 5000);
+    // Alert content
+    alert.innerHTML = `
+            <div class="alert-content">
+                <i class="fas ${icons[type] || 'fa-circle-info'} alert-icon"></i>
+                <span>${message}</span>
+            </div>
+            <button class="alert-close" aria-label="Close">
+                <i class="fas fa-times"></i>
+            </button>
+            <div class="alert-progress"></div>
+        `;
+
+    // Add to container
+    container.appendChild(alert);
+
+    // Auto-remove after duration
+    let timeout;
+    const removeAlert = () => {
+        alert.style.animation = 'fadeOut 0.3s ease-out forwards';
+        setTimeout(() => alert.remove(), 300);
+    };
+
+    timeout = setTimeout(removeAlert, 5000);
+
+    // Click to dismiss
+    alert.querySelector('.alert-close').addEventListener('click', () => {
+        clearTimeout(timeout);
+        removeAlert();
+    });
 }
 
 // Load visitor records
@@ -478,26 +624,26 @@ function loadVisitorRecords() {
 function renderNoRecords() {
     const tbody = document.getElementById('visitorsTableBody');
     tbody.innerHTML = `
-                <tr>
-                    <td colspan="11" class="text-center py-4 text-muted">
-                        <i class="fas fa-user-slash fa-2x mb-2"></i>
-                        <p>No visitor records found</p>
-                    </td>
-                </tr>
-            `;
+            <tr>
+                <td colspan="11" class="text-center py-4 text-muted">
+                    <i class="fas fa-user-slash fa-2x mb-2"></i>
+                    <p>No visitor records found</p>
+                </td>
+            </tr>
+        `;
 }
 
 function renderErrorState(errorMessage) {
     const tbody = document.getElementById('visitorsTableBody');
     tbody.innerHTML = `
-                <tr>
-                    <td colspan="11" class="text-center py-4 text-danger">
-                        <i class="fas fa-exclamation-triangle fa-2x mb-2"></i>
-                        <p>Failed to load records</p>
-                        <small>${errorMessage}</small>
-                    </td>
-                </tr>
-            `;
+            <tr>
+                <td colspan="11" class="text-center py-4 text-danger">
+                    <i class="fas fa-exclamation-triangle fa-2x mb-2"></i>
+                    <p>Failed to load records</p>
+                    <small>${errorMessage}</small>
+                </td>
+            </tr>
+        `;
 }
 
 function renderVisitorRecords(visitors) {
@@ -519,27 +665,27 @@ function renderVisitorRecords(visitors) {
 
         // Create row HTML with IDCardNo
         row.innerHTML = `
-            <td>${visitor.Name || '-'}</td>
-            <td>${visitor.Phone || '-'}</td>
-            <td>${visitor.TypeOfVisitor || '-'}</td>
-            <td>${visitor.IDCardNo || '-'}</td>  <!-- Added ID Card No -->
-            <td>${visitor.NoOfPersons || '-'}</td>
-            <td>${visitor.PersonToMeet || '-'}</td>
-            <td>${visitor.Purpose || '-'}</td>
-            <td>${formatTime(visitor.InTime) || '-'}</td>
-            <td>${visitor.OutTime ? formatTime(visitor.OutTime) : '-'}</td>
-            <td>
-                <span class="badge ${visitor.OutTime ? 'bg-success' : 'bg-warning text-dark'}">
-                    <i class="fas ${visitor.OutTime ? 'fa-sign-out-alt' : 'fa-sign-in-alt'} me-1"></i>
-                    ${visitor.OutTime ? 'Checked Out' : 'Checked In'}
-                </span>
-            </td>
-            <td>
-                <button class="btn btn-sm btn-outline-primary edit-btn" data-id="${visitor.VisitorID}">
-                    <i class="fas fa-sign-out-alt"></i> Check Out
-                </button>
-            </td>
-        `;
+                <td>${visitor.Name || '-'}</td>
+                <td>${visitor.Phone || '-'}</td>
+                <td>${visitor.TypeOfVisitor || '-'}</td>
+                <td>${visitor.IDCardNo || '-'}</td>
+                <td>${visitor.NoOfPersons || '-'}</td>
+                <td>${visitor.PersonToMeet || '-'}</td>
+                <td>${visitor.Purpose || '-'}</td>
+                <td>${formatTime(visitor.InTime) || '-'}</td>
+                <td>${visitor.OutTime ? formatTime(visitor.OutTime) : '-'}</td>
+                <td>
+                    <span class="badge ${visitor.OutTime ? 'bg-success' : 'bg-warning text-dark'}">
+                        <i class="fas ${visitor.OutTime ? 'fa-sign-out-alt' : 'fa-sign-in-alt'} me-1"></i>
+                        ${visitor.OutTime ? 'Checked Out' : 'Checked In'}
+                    </span>
+                </td>
+                <td>
+                    <button class="btn btn-sm btn-outline-primary edit-btn" data-id="${visitor.VisitorID}">
+                        <i class="fas fa-sign-out-alt"></i> Check Out
+                    </button>
+                </td>
+            `;
 
         // Insert photo cell at the beginning
         row.insertBefore(photoCell, row.firstChild);
@@ -569,42 +715,42 @@ function showEditOutTimeModal(visitorId) {
 
             // Create modal HTML with ID card info
             const modalHtml = `
-                <div class="modal fade" id="editOutTimeModal" tabindex="-1">
-                    <div class="modal-dialog">
-                        <div class="modal-content">
-                            <div class="modal-header">
-                                <h5 class="modal-title">Check Out Visitor</h5>
-                                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
-                            </div>
-                            <div class="modal-body">
-                                <div class="row mb-3">
-                                    <div class="col-md-6">
-                                        <label class="form-label">Visitor Name</label>
-                                        <input type="text" class="form-control" value="${visitor.Name || ''}" readonly>
+                    <div class="modal fade" id="editOutTimeModal" tabindex="-1">
+                        <div class="modal-dialog">
+                            <div class="modal-content">
+                                <div class="modal-header">
+                                    <h5 class="modal-title">Check Out Visitor</h5>
+                                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                                </div>
+                                <div class="modal-body">
+                                    <div class="row mb-3">
+                                        <div class="col-md-6">
+                                            <label class="form-label">Visitor Name</label>
+                                            <input type="text" class="form-control" value="${visitor.Name || ''}" readonly>
+                                        </div>
+                                        <div class="col-md-6">
+                                            <label class="form-label">ID Card No</label>
+                                            <input type="text" class="form-control" id="checkoutIdCardNo" 
+                                                value="${visitor.IDCardNo || ''}" readonly>
+                                        </div>
                                     </div>
-                                    <div class="col-md-6">
-                                        <label class="form-label">ID Card No</label>
-                                        <input type="text" class="form-control" id="checkoutIdCardNo" 
-                                            value="${visitor.IDCardNo || ''}" readonly>
+                                    <div class="mb-3">
+                                        <label class="form-label">Check Out Time</label>
+                                        <input type="text" class="form-control" id="editOutTime" placeholder="Select time">
+                                    </div>
+                                    <div id="checkoutIdCardAlert" class="alert alert-warning d-none">
+                                        <i class="fas fa-exclamation-triangle me-2"></i>
+                                        <span>This ID card is still in use after check-out</span>
                                     </div>
                                 </div>
-                                <div class="mb-3">
-                                    <label class="form-label">Check Out Time</label>
-                                    <input type="text" class="form-control" id="editOutTime" placeholder="Select time">
+                                <div class="modal-footer">
+                                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                                    <button type="button" class="btn btn-primary" id="saveOutTimeBtn">Confirm Check Out</button>
                                 </div>
-                                <div id="checkoutIdCardAlert" class="alert alert-warning d-none">
-                                    <i class="fas fa-exclamation-triangle me-2"></i>
-                                    <span>This ID card is still in use after check-out</span>
-                                </div>
-                            </div>
-                            <div class="modal-footer">
-                                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
-                                <button type="button" class="btn btn-primary" id="saveOutTimeBtn">Confirm Check Out</button>
                             </div>
                         </div>
                     </div>
-                </div>
-            `;
+                `;
 
             // Add modal to DOM
             document.body.insertAdjacentHTML('beforeend', modalHtml);
@@ -640,17 +786,6 @@ function showEditOutTimeModal(visitorId) {
             showAlert(error.message, 'danger');
         });
 }
-
-//         updateOutTime(visitorId, outTime);
-//         modal.hide();
-//     });
-
-//     // Show modal and clean up when hidden
-//     modal.show();
-//     document.getElementById('editOutTimeModal').addEventListener('hidden.bs.modal', function () {
-//         this.remove();
-//     });
-// }
 
 // Function to update out time via API
 function updateOutTime(visitorId, outTime) {
@@ -777,6 +912,7 @@ function setupTabSwitching() {
     if (tabs.visitor) tabs.visitor.click();
 }
 
+// ID Card duplicate checking functionality
 $(document).ready(function () {
     const $idCardInput = $('#idCardNo');
     const $form = $('#visitorForm');
@@ -790,20 +926,20 @@ $(document).ready(function () {
         $('.id-card-alert').remove();
 
         const alertHtml = `
-            <div class="alert alert-warning alert-dismissible fade show mt-2 id-card-alert" role="alert">
-                <div class="d-flex align-items-start">
-                    <i class="fas fa-exclamation-triangle mt-1 me-2"></i>
-                    <div>
-                        <strong>Duplicate ID Card Detected!</strong>
-                        <div class="mt-1">
-                            <div>Visitor Name: ${data.name}</div>
-                            <div>Checked In: ${data.in_time}</div>
+                <div class="alert alert-warning alert-dismissible fade show mt-2 id-card-alert" role="alert">
+                    <div class="d-flex align-items-start">
+                        <i class="fas fa-exclamation-triangle mt-1 me-2"></i>
+                        <div>
+                            <strong>Duplicate ID Card Detected!</strong>
+                            <div class="mt-1">
+                                <div>Visitor Name: ${data.name}</div>
+                                <div>Checked In: ${data.in_time}</div>
+                            </div>
                         </div>
+                        <button type="button" class="btn-close ms-auto" data-bs-dismiss="alert" aria-label="Close"></button>
                     </div>
-                    <button type="button" class="btn-close ms-auto" data-bs-dismiss="alert" aria-label="Close"></button>
                 </div>
-            </div>
-        `;
+            `;
 
         // Insert after the ID card input
         $idCardInput.after(alertHtml);
