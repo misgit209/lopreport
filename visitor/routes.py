@@ -1204,39 +1204,26 @@ def logout():
 
 @visitor_bp.route('/api/lopapplications', methods=['GET'])
 def get_lop_applications():
-    if 'user_id' not in session:
-        return jsonify({"success": False, "message": "Unauthorized"}), 401
-
     try:
-        with closing(get_connection()) as conn:
-            with conn.cursor() as cursor:
-                # Fetch all records, no punch number filter
-                cursor.execute("""
-                    SELECT *
-                    FROM tblLopApplication
-                """)
-                
-                lop_list = []
-                for row in cursor.fetchall():
-                    lop = {
-                        "id": row.ID,
-                        "name": row.Name,
-                        "punchNumber": row.PunchNumber,
-                        "appliedFor": row.AppliedFor,
-                        "approvedByManager": row.StatusByManager,
-                        "approvedByHR": row.StatusByHr
-                    }
-                    lop_list.append(lop)
-
-        return jsonify({
-            "success": True,
-            "lopApplications": lop_list,
-            "count": len(lop_list)
-        })
-
+        conn = get_connection()
+        cursor = conn.cursor()
+        cursor.execute("SELECT ID, Name, PunchNumber, AppliedFor, StatusByManager, StatusbyHr, StatusBySecurity FROM tblLopApplication")
+        records = []
+        for row in cursor.fetchall():
+            records.append({
+                "id": row.ID,
+                "name": row.Name,
+                "punchNumber": row.PunchNumber,
+                "appliedFor": row.AppliedFor,
+                "approvedByManager": row.StatusByManager,
+                "approvedByHR": row.StatusbyHr,
+                "statusBySecurity": row.StatusBySecurity
+            })
+        cursor.close()
+        conn.close()
+        return jsonify({"lopApplications": records})
     except Exception as e:
-        logger.error(f"Error fetching LOP applications: {str(e)}", exc_info=True)
-        return jsonify({"success": False, "message": str(e)}), 500
+        return jsonify({"lopApplications": [], "error": str(e)})
     
 @visitor_bp.route("/api/update_security_status/<int:application_id>", methods=["PUT"])
 def update_security_status(id):
@@ -1261,28 +1248,24 @@ def update_security_status(id):
 @visitor_bp.route('/api/update_status', methods=['POST'])
 def update_status():
     data = request.get_json()
-    id = data.get('id')
+    record_id = data.get('id')
     status = data.get('status')
 
-    if not id or not status:
-        return jsonify({'success': False, 'message': 'Missing ID or Status'}), 400
+    if not record_id or not status:
+        return jsonify({"success": False, "message": "Missing ID or status"}), 400
 
     try:
-        with closing(get_connection()) as conn:
-            with conn.cursor() as cursor:
-                cursor.execute("""
-                    UPDATE tblLopApplication
-                    SET StatusBySecurity = ?
-                    WHERE id = ?
-                """, (status, id))
-
-                print("Updating:", id, status)
-
-                conn.commit()
-
-        return jsonify({'success': True, 'message': 'Status updated successfully'})
-
+        conn = get_connection()
+        cursor = conn.cursor()
+        # Update the StatusBySecurity column
+        cursor.execute("""
+            UPDATE tblLopApplication
+            SET StatusBySecurity = ?
+            WHERE ID = ?
+        """, (status, record_id))
+        conn.commit()
+        cursor.close()
+        conn.close()
+        return jsonify({"success": True, "message": f"Status updated to {status}"})
     except Exception as e:
-        print(f"❌ Error updating data: {e}")
-        return jsonify({'success': False, 'message': f'Error updating data: {str(e)}'}), 500
-
+        return jsonify({"success": False, "message": str(e)}), 500

@@ -453,23 +453,24 @@
                     <td>${record.approvedByHR || ''}</td>
                     <td id="status-cell-${record.id}">
                         ${
-                            record.StatusBySecurity && record.StatusBySecurity.trim().toLowerCase() !== ''
+                            // IF condition: show buttons only if StatusBySecurity is null, empty, or 'pending'
+                            !record.statusBySecurity  || record.statusBySecurity .trim().toLowerCase() === 'pending'
                             ? `
-                                <span class="badge ${
-                                    record.StatusBySecurity.trim().toLowerCase() === 'approved'
-                                        ? 'bg-success'
-                                        : 'bg-danger'
-                                }">
-                                    ${record.StatusBySecurity}
-                                </span>
-                            `
-                            : `
                                 <button class="btn btn-success btn-sm approve-btn" data-id="${record.id}">Approve</button>
                                 <button class="btn btn-danger btn-sm reject-btn" data-id="${record.id}">Reject</button>
                             `
+                            : `
+                                <span class="badge ${
+                                    record.statusBySecurity .trim().toLowerCase() === 'approved'
+                                        ? 'bg-success'
+                                        : 'bg-danger'
+                                }">
+                                    ${record.statusBySecurity .trim()}
+                                </span>
+                            `
                         }
                     </td>
-                `;
+                                    `;
                 tableBody.appendChild(row);
             });
             
