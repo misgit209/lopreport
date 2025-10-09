@@ -1202,12 +1202,14 @@ def logout():
     session.pop('user_id', None)
     return redirect(url_for('visitor.visitor_login'))
 
+# Leave or Permission tab
+
 @visitor_bp.route('/api/lopapplications', methods=['GET'])
 def get_lop_applications():
     try:
         conn = get_connection()
         cursor = conn.cursor()
-        cursor.execute("SELECT ID, Name, PunchNumber, AppliedFor, StatusByManager, StatusbyHr, StatusBySecurity FROM tblLopApplication")
+        cursor.execute("SELECT ID, Name, PunchNumber, AppliedFor, StatusByManager, StatusbyHr, StatusBySecurity FROM tblLopApplication WHERE AppliedFor IN ('leave', 'permission')")
         records = []
         for row in cursor.fetchall():
             records.append({
@@ -1269,3 +1271,5 @@ def update_status():
         return jsonify({"success": True, "message": f"Status updated to {status}"})
     except Exception as e:
         return jsonify({"success": False, "message": str(e)}), 500
+    
+    # Onduty tab
