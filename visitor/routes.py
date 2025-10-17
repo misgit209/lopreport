@@ -1,7 +1,7 @@
 from io import BytesIO
 import xlsxwriter
 import time
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, date, time
 import socket
 import base64
 import ssl
@@ -1227,26 +1227,6 @@ def get_lop_applications():
     except Exception as e:
         return jsonify({"lopApplications": [], "error": str(e)})
     
-@visitor_bp.route("/api/update_security_status/<int:application_id>", methods=["PUT"])
-def update_security_status(id):
-    data = request.get_json()
-    new_status = data.get("SecurityStatus")
-
-    try:
-        with closing(get_connection()) as conn:
-            with conn.cursor() as cursor:
-                cursor.execute("""
-                    UPDATE tblLopApplication
-                    SET SecurityStatus = ?
-                    WHERE ID = ?
-                """, (new_status, id))
-                conn.commit()
-
-        return jsonify({"success": True, "message": "Status updated"})
-    except Exception as e:
-        print("Error updating status:", e)
-        return jsonify({"success": False, "message": str(e)}), 500
-    
 @visitor_bp.route('/api/update_status', methods=['POST'])
 def update_status():
     data = request.get_json()
@@ -1272,4 +1252,92 @@ def update_status():
     except Exception as e:
         return jsonify({"success": False, "message": str(e)}), 500
     
-    # Onduty tab
+    
+# Onduty
+@visitor_bp.route('/api/ondutyapplications', methods=['GET'])
+def get_onduty_applications():
+    try:
+        conn = get_connection()
+        cursor = conn.cursor()
+        cursor.execute("SELECT ID, Name, PunchNumber, AppliedFor, StatusByManager, StatusbyHr, StatusBySecurity FROM tblLopApplication WHERE AppliedFor IN ('onduty', 'on duty')")
+        records = []
+        for row in cursor.fetchall():
+            records.append({
+                "id": row.ID,
+                "name": row.Name,
+                "punchNumber": row.PunchNumber,
+                "appliedFor": row.AppliedFor,
+                "approvedByManager": row.StatusByManager,
+                "approvedByHR": row.StatusbyHr,
+                "statusBySecurity": row.StatusBySecurity
+            })
+        cursor.close()
+        conn.close()
+        return jsonify({"ondutyApplications": records})
+    except Exception as e:
+        return jsonify({"ondutyApplications": [], "error": str(e)})
+    
+@visitor_bp.route("/api/update_onduty_security_status", methods=["POST"])
+def update_onduty_security_status(id):
+    data = request.get_json()
+    new_status = data.get("SecurityStatus")
+
+    try:
+        with closing(get_connection()) as conn:
+            with conn.cursor() as cursor:
+                cursor.execute("""
+                    UPDATE tblLopApplication
+                    SET SecurityStatus = ?
+                    WHERE ID = ?
+                """, (new_status, id))
+                conn.commit()
+
+        return jsonify({"success": True, "message": "Status updated"})
+    except Exception as e:
+        print("Error updating status:", e)
+        return jsonify({"success": False, "message": str(e)}), 500
+    
+    # longOnduty
+
+@visitor_bp.route('/api/longOndutyapplications', methods=['GET'])
+def get_long_onduty_applications():
+    try:
+        conn = get_connection()
+        cursor = conn.cursor()
+        cursor.execute("SELECT ID, Name, PunchNumber, AppliedFor, StatusByManager, StatusbyHr, StatusBySecurity FROM tblLopApplication WHERE AppliedFor IN ('Long OD')")
+        records = []
+        for row in cursor.fetchall():
+            records.append({
+                "id": row.ID,
+                "name": row.Name,
+                "punchNumber": row.PunchNumber,
+                "appliedFor": row.AppliedFor,
+                "approvedByManager": row.StatusByManager,
+                "approvedByHR": row.StatusbyHr,
+                "statusBySecurity": row.StatusBySecurity
+            })
+        cursor.close()
+        conn.close()
+        return jsonify({"longOndutyapplications": records})
+    except Exception as e:
+        return jsonify({"longOndutyapplications": [], "error": str(e)})
+    
+@visitor_bp.route("/api/update_long_onduty_security_status", methods=["POST"])
+def update_long_onduty_security_status(id):
+    data = request.get_json()
+    new_status = data.get("SecurityStatus")
+
+    try:
+        with closing(get_connection()) as conn:
+            with conn.cursor() as cursor:
+                cursor.execute("""
+                    UPDATE tblLopApplication
+                    SET SecurityStatus = ?
+                    WHERE ID = ?
+                """, (new_status, id))
+                conn.commit()
+
+        return jsonify({"success": True, "message": "Status updated"})
+    except Exception as e:
+        print("Error updating status:", e)
+        return jsonify({"success": False, "message": str(e)}), 500

@@ -239,9 +239,9 @@
                 </div>
 
                     <!-- Pagination -->
-                    <div class="d-flex justify-content-between align-items-center mt-3" id="paginationSection" class="loading-spinner d-none">
+                    <div id="paginationSection" class="d-flex justify-content-between align-items-center mt-3">
                         <div class="text-muted" id="paginationInfo">
-                            <p id="recordCount" style="margin-left: 20px;">Total Records: 0</p>
+                            <p id="lopRecordCount" style="margin-left: 20px; margin-bottom: 0;">Total Records: 0</p>
                         </div>
                         <nav>
                             <ul class="pagination mb-0" id="paginationControls">
@@ -269,19 +269,10 @@
                         <div class="col-md-6">
                             <div class="input-group">
                                 <input type="text" class="form-control" id="punchNoSearch" placeholder="Enter Punch Number...">
-                                <button class="btn btn-outline-primary" type="button" id="searchBtn">
-                                    <i class="fas fa-search"></i> Search
-                                </button>
                             </div>
                         </div>
-                        <div class="col-md-6 text-end">
-                            <!--<button class="btn btn-outline-secondary me-2" id="refreshBtn">
-                                <i class="fas fa-sync-alt me-1"></i> Refresh
-                            </button>-->
-                            <button class="btn btn-primary" id="addRecordBtn">
-                                <i class="fas fa-plus me-1"></i> Add Record
-                            </button>
-                        </div>
+                    </div>
+                        
                     </div>
 
                     <!-- Loading Spinner -->
@@ -308,7 +299,7 @@
 
                                 </tr>
                             </thead>
-                            <tbody id="lopTableBody">
+                            <tbody id="ondutyTableBody">
                                 <!-- Rows will be inserted here dynamically -->
                             </tbody>
                         </table>
@@ -316,9 +307,9 @@
                 </div>
 
                     <!-- Pagination -->
-                    <div class="d-flex justify-content-between align-items-center mt-3" id="paginationSection" class="loading-spinner d-none">
+                    <div id="paginationSection" class="d-flex justify-content-between align-items-center mt-3">
                         <div class="text-muted" id="paginationInfo">
-                            <p id="recordCount" style="margin-left: 20px;">Total Records: 0</p>
+                            <p id="ondutyRecordCount" style="margin-left: 20px; margin-bottom: 0;">Total Records: 0</p>
                         </div>
                         <nav>
                             <ul class="pagination mb-0" id="paginationControls">
@@ -350,19 +341,10 @@
                         <div class="col-md-6">
                             <div class="input-group">
                                 <input type="text" class="form-control" id="punchNoSearch" placeholder="Enter Punch Number...">
-                                <button class="btn btn-outline-primary" type="button" id="searchBtn">
-                                    <i class="fas fa-search"></i> Search
-                                </button>
                             </div>
                         </div>
-                        <div class="col-md-6 text-end">
-                            <!--<button class="btn btn-outline-secondary me-2" id="refreshBtn">
-                                <i class="fas fa-sync-alt me-1"></i> Refresh
-                            </button>-->
-                            <button class="btn btn-primary" id="addRecordBtn">
-                                <i class="fas fa-plus me-1"></i> Add Record
-                            </button>
-                        </div>
+                    </div>
+                        
                     </div>
 
                     <!-- Loading Spinner -->
@@ -389,7 +371,7 @@
 
                                 </tr>
                             </thead>
-                            <tbody id="lopTableBody">
+                            <tbody id="longOndutyTableBody">
                                 <!-- Rows will be inserted here dynamically -->
                             </tbody>
                         </table>
@@ -397,9 +379,10 @@
                 </div>
 
                     <!-- Pagination -->
-                    <div class="d-flex justify-content-between align-items-center mt-3" id="paginationSection" class="loading-spinner d-none">
+                    <!-- Pagination -->
+                    <div id="paginationSection" class="d-flex justify-content-between align-items-center mt-3">
                         <div class="text-muted" id="paginationInfo">
-                            <p id="recordCount" style="margin-left: 20px;">Total Records: 0</p>
+                            <p id="longOndDutyRecordCount" style="margin-left: 20px; margin-bottom: 0;">Total Records: 0</p>
                         </div>
                         <nav>
                             <ul class="pagination mb-0" id="paginationControls">
@@ -473,9 +456,12 @@
                         section.classList.remove('d-none');
                         tab.classList.add('active');
 
-                        // Load content if needed
-                        if (tabId === 'records') {
-                            // displayRecords(records);
+                        if (tabId === 'leaveOrPermission') {
+                            fetchRecordsForTab('leave');
+                        } else if (tabId === 'onduty') {
+                            fetchRecordsForTab('onduty');
+                        } else if (tabId === 'longOnduty') {
+                            fetchRecordsForTab('longonduty');
                         }
                     });
                 }
@@ -534,7 +520,21 @@
             const punchNumber = punchNoSearch.value.trim().toLowerCase();
 
             try {
-                const response = await fetch('/visitor/api/lopapplications');
+                const activeTab = document.querySelector('.tab-nav-item.active').id;
+        let apiUrl, tableBodyId;
+
+        if (activeTab === 'ondutyTab') {
+            apiUrl = '/visitor/api/ondutyapplications';
+            tableBodyId = 'ondutyTableBody';
+        } else if (activeTab === 'longOndutyTab') {
+            apiUrl = '/visitor/api/longOndutyapplications';
+            tableBodyId = 'longOndutyTableBody';
+        } else {
+            apiUrl = '/visitor/api/lopapplications';
+            tableBodyId = 'lopTableBody';
+        }
+        
+                const response = await fetch(apiUrl);
 
                 if (!response.ok) {
                     throw new Error(`HTTP error! status: ${response.status}`);
@@ -552,7 +552,7 @@
                 }
 
                 // Display filtered or all records
-                displayRecords(records);
+                displayRecords(records, tableBodyId);
 
             } catch (error) {
                 console.error('Error fetching data:', error);
@@ -563,95 +563,105 @@
             }
         }
 
-        function displayRecords(records, index) {
-            const tableBody = document.getElementById('lopTableBody');
-            if (!tableBody) {
-                console.error('Table body not found!');
-                return;
-            }
+        function displayRecords(records, tableBodyId) {
+    const tableBody = document.getElementById(tableBodyId);
+    if (!tableBody) {
+        console.error('Table body not found:', tableBodyId);
+        return;
+    }
 
-            tableBody.innerHTML = '';
+    tableBody.innerHTML = '';
 
-            if (!records || records.length === 0) {
-                tableBody.innerHTML = `<tr><td colspan="8" style="text-align:center">No records found</td></tr>`;
-                return;
-            }
+    if (!records || records.length === 0) {
+        tableBody.innerHTML = `<tr><td colspan="8" style="text-align:center">No records found</td></tr>`;
+        updateRecordCount(tableBodyId); // update count even if 0
+        return;
+    }
 
-            records.forEach((record, index) => {
-                const row = document.createElement('tr');
-                row.innerHTML = `
-                    <td>${index + 1}</td>  <!-- Serial number -->
-                    <td>${record.name || ''}</td>
-                    <td>${record.punchNumber || ''}</td>
-                    <td>${record.appliedFor || ''}</td>
-                    <td>${record.approvedByManager || ''}</td>
-                    <td>${record.approvedByHR || ''}</td>
-                    <td id="status-cell-${record.id}">
-                        ${
-                            // IF condition: show buttons only if StatusBySecurity is null, empty, or 'pending'
-                            !record.statusBySecurity  || record.statusBySecurity .trim().toLowerCase() === 'pending'
-                            ? `
-                                <button class="btn btn-success btn-sm approve-btn" data-id="${record.id}">Approve</button>
-                                <button class="btn btn-danger btn-sm reject-btn" data-id="${record.id}">Reject</button>
-                            `
-                            : `
-                                <span class="badge ${
-                                    record.statusBySecurity .trim().toLowerCase() === 'approved'
-                                        ? 'bg-success'
-                                        : 'bg-danger'
-                                }">
-                                    ${record.statusBySecurity .trim()}
-                                </span>
-                            `
-                        }
-                    </td>
-                                    `;
-                tableBody.appendChild(row);
-            });
-            
+    records.forEach((record, index) => {
+        const row = document.createElement('tr');
+        row.setAttribute('data-record-id', record.id); // ✅ add this for counting
+        row.innerHTML = `
+            <td>${index + 1}</td>
+            <td>${record.name || ''}</td>
+            <td>${record.punchNumber || ''}</td>
+            <td>${record.appliedFor || ''}</td>
+            <td>${record.approvedByManager || ''}</td>
+            <td>${record.approvedByHR || ''}</td>
+            <td id="status-cell-${tableBodyId}-${record.id}">
+                ${
+                    !record.statusBySecurity || record.statusBySecurity.trim().toLowerCase() === 'pending'
+                    ? `
+                        <button class="btn btn-success btn-sm approve-btn" data-id="${record.id}" data-tab="${tableBodyId}">Approve</button>
+                        <button class="btn btn-danger btn-sm reject-btn" data-id="${record.id}" data-tab="${tableBodyId}">Reject</button>
+                    `
+                    : `
+                        <span class="badge ${
+                            record.statusBySecurity.trim().toLowerCase() === 'approved'
+                                ? 'bg-success'
+                                : 'bg-danger'
+                        }">${record.statusBySecurity.trim()}</span>
+                    `
+                }
+            </td>
+        `;
+        tableBody.appendChild(row);
+    });
 
-    // Attach click listeners
+    // Attach button listeners
     document.querySelectorAll('.approve-btn').forEach(btn => {
-        btn.addEventListener('click', () => updateStatus(btn.dataset.id, 'Approved'));
+        btn.addEventListener('click', () => updateStatus(btn.dataset.id, 'Approved', btn.dataset.tab));
+    });
+    document.querySelectorAll('.reject-btn').forEach(btn => {
+        btn.addEventListener('click', () => updateStatus(btn.dataset.id, 'Rejected', btn.dataset.tab));
     });
 
-    document.querySelectorAll('.reject-btn').forEach(btn => {
-        btn.addEventListener('click', () => updateStatus(btn.dataset.id, 'Rejected'));
-    });
+    // ✅ Update the record count after displaying rows
+    updateRecordCount(tableBodyId);
+}
 
     // Show the count
-    const recordCount = document.getElementById('recordCount');
-    if (recordCount) {
-        recordCount.textContent = `Total Records: ${records.length}`;
+    function updateRecordCount(tableBodyId) {
+    const tableBody = document.getElementById(tableBodyId);
+
+    // Map table body to its counter element
+    const countMap = {
+        'lopTableBody': 'lopRecordCount',
+        'ondutyTableBody': 'ondutyRecordCount',
+        'longOndutyTableBody': 'longOndDutyRecordCount'
+    };
+
+    const recordCount = document.getElementById(countMap[tableBodyId]);
+
+    if (tableBody && recordCount) {
+        // Only count rows that have data-record-id (ignore "No records found")
+        const rows = tableBody.querySelectorAll('tr[data-record-id]');
+        recordCount.textContent = `Total Records: ${rows.length}`;
+    } else {
+        console.warn('❌ Table body or recordCount element not found for:', tableBodyId);
     }
 }
 
-function updateStatus(id, status) {
+
+function updateStatus(id, status, tableBodyId) {
     fetch(`/visitor/api/update_status`, {
         method: 'POST',
-        headers: {
-            'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({
-            id: id,
-            status: status
-        })
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ id, status })
     })
     .then(response => response.json())
     .then(data => {
-    if (data.success) {
-        // Update the clicked button cell
-        const cell = document.getElementById(`status-cell-${id}`);
-        if (cell) {
-            cell.innerHTML = `<span class="badge ${status === 'Approved' ? 'bg-success' : 'bg-danger'}">${status}</span>`;
+        if (data.success) {
+            const cell = document.getElementById(`status-cell-${tableBodyId}-${id}`);
+            if (cell) {
+                cell.innerHTML = `<span class="badge ${status === 'Approved' ? 'bg-success' : 'bg-danger'}">${status}</span>`;
+            }
+        } else {
+            alert('Failed to update status');
         }
-    } else {
-        alert('Failed to update status');
-    }
-})
-    .catch(error => console.error('Error:', error));
+    })
+    .catch(err => console.error('Error updating status:', err));
 }
-
         // Show/Hide Loading Spinner
         function showLoading(show) {
         if (show) {
@@ -661,23 +671,50 @@ function updateStatus(id, status) {
         }
     }
         
-    async function fetchAllRecords() {
+    // Fetch and display records for specific tab
+async function fetchRecordsForTab(tabType) {
     showLoading(true);
 
+    let apiUrl;
+    let tableBodyId;
+
+    // Decide API and Table based on tab type
+    if (tabType === 'onduty') {
+        apiUrl = '/visitor/api/ondutyapplications';
+        tableBodyId = 'ondutyTableBody';
+    } else if (tabType === 'longonduty') {
+        apiUrl = '/visitor/api/longOndutyapplications';
+        tableBodyId = 'longOndutyTableBody';
+    } else {
+        apiUrl = '/visitor/api/lopapplications';
+        tableBodyId = 'lopTableBody';
+    }
+
     try {
-        const response = await fetch('/visitor/api/lopapplications');
+        const response = await fetch(apiUrl);
         if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
         const data = await response.json();
-        console.log(data); // Verify API data
-        displayRecords(data.lopApplications); // <-- important: pass the array
+
+        let records = [];
+        if (tabType === 'onduty') {
+            records = data.ondutyApplications || [];
+        } else if (tabType === 'longonduty') {
+            records = data.longOndutyapplications || [];
+        } else {
+            records = data.lopApplications || [];
+        }
+
+        displayRecords(records, tableBodyId);
+
     } catch (error) {
-        console.error('Error fetching data:', error);
-        showAlert('Error fetching records. Please try again.', 'error');
-        displayRecords([]);
+        console.error(`Error fetching ${tabType} data:`, error);
+        showAlert(`Error fetching ${tabType} records. Please try again.`, 'error');
+        displayRecords([], tableBodyId);
     } finally {
         showLoading(false);
     }
 }
+
 window.updateStatus = async function (id, status) {
     try {
         console.log(`🟢 Sending update for ID=${id}, Status=${status}`);
@@ -710,6 +747,7 @@ window.updateStatus = async function (id, status) {
 };
 
 // onduty tab
+
 
 
     </script>
